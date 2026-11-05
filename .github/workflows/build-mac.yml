@@ -1,4 +1,4 @@
-name: "Build macOS Universal (Apple Silicon M1-M4 and Intel)"
+name: Build macOS Universal
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-macos:
-    name: "Build macOS VST3 and AU"
+    name: Build macOS VST3 and AU
     runs-on: macos-14
 
     steps:
@@ -49,37 +49,11 @@ jobs:
           if [ -d "build-mac/NordPianoPrototype_artefacts/Release/Standalone/Nord Pianos.app" ]; then
             cp -R "build-mac/NordPianoPrototype_artefacts/Release/Standalone/Nord Pianos.app" package_mac/
           fi
-          
-          # Add simple install guide
-          cat << 'EOF' > package_mac/COMO_INSTALAR_NO_MAC.txt
-================================================================
-           NORD PIANOS - INSTALACAO NO MACOS (M1/M2/M3)
-================================================================
-
-1. FORMATO VST3 (Ableton Live, Reaper, Cubase, Studio One):
-   Copie a pasta "Nord Pianos.vst3" para:
-   /Library/Audio/Plug-Ins/VST3/
-   (ou ~/Library/Audio/Plug-Ins/VST3/)
-
-2. FORMATO AU - Audio Unit (Logic Pro, MainStage, GarageBand):
-   Copie a pasta "Nord Pianos.component" para:
-   /Library/Audio/Plug-Ins/Components/
-   (ou ~/Library/Audio/Plug-Ins/Components/)
-
-3. APLICATIVO STANDALONE:
-   Arraste "Nord Pianos.app" para a sua pasta Aplicativos.
-
-PASTA DE SONS (.npno / .nsmp):
-Coloque seus arquivos de timbres em:
-~/Music/Nord Pianos/Sounds/
-
-SE O MAC BLOQUEAR O PLUGIN NA PRIMEIRA VEZ:
-Abra o Terminal no Mac e rode:
-sudo xattr -cr "/Library/Audio/Plug-Ins/VST3/Nord Pianos.vst3"
-sudo xattr -cr "/Library/Audio/Plug-Ins/Components/Nord Pianos.component"
-================================================================
-EOF
-
+          echo "Instalacao Nord Pianos no Mac:" > package_mac/LEIAME.txt
+          echo "1. VST3: Copie Nord Pianos.vst3 para /Library/Audio/Plug-Ins/VST3/" >> package_mac/LEIAME.txt
+          echo "2. AU: Copie Nord Pianos.component para /Library/Audio/Plug-Ins/Components/" >> package_mac/LEIAME.txt
+          echo "3. Standalone: Arraste Nord Pianos.app para Aplicativos" >> package_mac/LEIAME.txt
+          echo "4. Sons: Coloque seus timbres .npno em ~/Music/Nord Pianos/Sounds/" >> package_mac/LEIAME.txt
           cd package_mac && zip -r ../Nord_Pianos_Mac_Apple_Silicon.zip * && cd ..
 
       - name: Upload Artifact
