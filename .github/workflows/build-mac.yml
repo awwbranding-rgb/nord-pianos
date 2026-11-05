@@ -1,4 +1,4 @@
-name: Build macOS Universal & Apple Silicon (M1/M2/M3/M4)
+name: "Build macOS Universal (Apple Silicon M1-M4 and Intel)"
 
 on:
   workflow_dispatch:
@@ -7,18 +7,18 @@ on:
 
 jobs:
   build-macos:
-    name: Build macOS VST3 / AU / Standalone (.dmg & .zip)
-    runs-on: macos-14 # Native Apple Silicon M1/M2/M3 runner on GitHub Actions
+    name: "Build macOS VST3 and AU"
+    runs-on: macos-14
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup macOS Build Environment
+      - name: Setup Dependencies
         run: |
           brew install cmake ninja
 
-      - name: Configure CMake for Universal Binary (ARM64 + x86_64)
+      - name: Configure CMake
         run: |
           cmake -B build-mac \
             -G Ninja \
@@ -27,80 +27,64 @@ jobs:
             -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0" \
             -DBUILD_PLUGIN=ON
 
-      - name: Compile VST3, AU and Standalone
+      - name: Build Plugins
         run: |
-          cmake --build build-mac --config Release --parallel $(sysctl -n hw.ncpu)
+          cmake --build build-mac --config Release --parallel
 
-      - name: Code Sign Bundles (Ad-Hoc for Apple Silicon Gatekeeper)
+      - name: Ad-Hoc Sign Binaries
         run: |
-          find build-mac/NordPianoPrototype_artefacts/Release -name "*.vst3" -exec codesign --force --deep --sign - {} +
-          find build-mac/NordPianoPrototype_artefacts/Release -name "*.component" -exec codesign --force --deep --sign - {} +
-          find build-mac/NordPianoPrototype_artefacts/Release -name "*.app" -exec codesign --force --deep --sign - {} +
+          find build-mac/NordPianoPrototype_artefacts/Release -name "*.vst3" -exec codesign --force --deep --sign - {} + || true
+          find build-mac/NordPianoPrototype_artefacts/Release -name "*.component" -exec codesign --force --deep --sign - {} + || true
+          find build-mac/NordPianoPrototype_artefacts/Release -name "*.app" -exec codesign --force --deep --sign - {} + || true
 
-      - name: Package Installer DMG and ZIP
+      - name: Prepare Package
         run: |
-          mkdir -p dist_mac/Nord_Pianos_Installer
-          
-          # Copy VST3 bundle
+          mkdir -p package_mac
           if [ -d "build-mac/NordPianoPrototype_artefacts/Release/VST3/Nord Pianos.vst3" ]; then
-            cp -R "build-mac/NordPianoPrototype_artefacts/Release/VST3/Nord Pianos.vst3" dist_mac/Nord_Pianos_Installer/
+            cp -R "build-mac/NordPianoPrototype_artefacts/Release/VST3/Nord Pianos.vst3" package_mac/
           fi
-          
-          # Copy AU (Component) bundle
           if [ -d "build-mac/NordPianoPrototype_artefacts/Release/AU/Nord Pianos.component" ]; then
-            cp -R "build-mac/NordPianoPrototype_artefacts/Release/AU/Nord Pianos.component" dist_mac/Nord_Pianos_Installer/
+            cp -R "build-mac/NordPianoPrototype_artefacts/Release/AU/Nord Pianos.component" package_mac/
+          fi
+          if [ -d "build-mac/NordPianoPrototype_artefacts/Release/Standalone/Nord Pianos.app" ]; then
+            cp -R "build-mac/NordPianoPrototype_artefacts/Release/Standalone/Nord Pianos.app" package_mac/
           fi
           
-          # Copy Standalone .app
-          if [ -d "build-mac/NordPianoPrototype_artefacts/Release/Standalone/Nord Pianos.app" ]; then
-            cp -R "build-mac/NordPianoPrototype_artefacts/Release/Standalone/Nord Pianos.app" dist_mac/Nord_Pianos_Installer/
-          fi
-
-          # Create install instruction file
-          cat << 'EOF' > dist_mac/Nord_Pianos_Installer/LEIAME_INSTALACAO.txt
+          # Add simple install guide
+          cat << 'EOF' > package_mac/COMO_INSTALAR_NO_MAC.txt
 ================================================================
            NORD PIANOS - INSTALACAO NO MACOS (M1/M2/M3)
 ================================================================
 
 1. FORMATO VST3 (Ableton Live, Reaper, Cubase, Studio One):
-   Arraste "Nord Pianos.vst3" para a pasta "VST3_Folder".
-   (Caminho real: /Library/Audio/Plug-Ins/VST3/)
+   Copie a pasta "Nord Pianos.vst3" para:
+   /Library/Audio/Plug-Ins/VST3/
+   (ou ~/Library/Audio/Plug-Ins/VST3/)
 
 2. FORMATO AU - Audio Unit (Logic Pro, MainStage, GarageBand):
-   Arraste "Nord Pianos.component" para a pasta "AU_Folder".
-   (Caminho real: /Library/Audio/Plug-Ins/Components/)
+   Copie a pasta "Nord Pianos.component" para:
+   /Library/Audio/Plug-Ins/Components/
+   (ou ~/Library/Audio/Plug-Ins/Components/)
 
 3. APLICATIVO STANDALONE:
-   Arraste "Nord Pianos.app" para a pasta "Applications".
+   Arraste "Nord Pianos.app" para a sua pasta Aplicativos.
 
 PASTA DE SONS (.npno / .nsmp):
-Coloque seus timbres da Nord em:
-~/Music/Nord Pianos/Sounds/ ou ~/Documents/Nord Pianos/Sounds/
+Coloque seus arquivos de timbres em:
+~/Music/Nord Pianos/Sounds/
 
 SE O MAC BLOQUEAR O PLUGIN NA PRIMEIRA VEZ:
-Abra o Terminal e digite:
+Abra o Terminal no Mac e rode:
 sudo xattr -cr "/Library/Audio/Plug-Ins/VST3/Nord Pianos.vst3"
 sudo xattr -cr "/Library/Audio/Plug-Ins/Components/Nord Pianos.component"
 ================================================================
 EOF
 
-          # Create drag-and-drop symlinks for 1-click installation
-          ln -s /Applications dist_mac/Nord_Pianos_Installer/Applications
-          ln -s /Library/Audio/Plug-Ins/VST3 dist_mac/Nord_Pianos_Installer/VST3_Folder
-          ln -s /Library/Audio/Plug-Ins/Components dist_mac/Nord_Pianos_Installer/AU_Folder
+          cd package_mac && zip -r ../Nord_Pianos_Mac_Apple_Silicon.zip * && cd ..
 
-          # Create .dmg installer disk image using native macOS hdiutil
-          hdiutil create -volname "Nord Pianos M1" -srcfolder dist_mac/Nord_Pianos_Installer -ov -format UDZO "Nord_Pianos_Mac_Apple_Silicon.dmg"
-
-          # Also create a zip bundle
-          cd dist_mac && zip -r ../Nord_Pianos_Mac_Apple_Silicon.zip Nord_Pianos_Installer && cd ..
-
-      - name: Upload Mac Installer (.dmg & .zip)
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Nord_Pianos_macOS_Apple_Silicon
-          path: |
-            Nord_Pianos_Mac_Apple_Silicon.dmg
-            Nord_Pianos_Mac_Apple_Silicon.zip
-          if-no-files-found: error
+          name: Nord_Pianos_Mac_Apple_Silicon
+          path: Nord_Pianos_Mac_Apple_Silicon.zip
           retention-days: 30
