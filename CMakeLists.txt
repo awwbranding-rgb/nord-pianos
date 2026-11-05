@@ -44,8 +44,6 @@ if(BUILD_PLUGIN)
     NEEDS_MIDI_INPUT TRUE
     NEEDS_MIDI_OUTPUT FALSE
     IS_MIDI_EFFECT FALSE
-    ICON_BIG "${CMAKE_CURRENT_SOURCE_DIR}/src/app_icon.png"
-    ICON_SMALL "${CMAKE_CURRENT_SOURCE_DIR}/src/app_icon.png"
     COPY_PLUGIN_AFTER_BUILD FALSE)
   juce_generate_juce_header(NordPianoPrototype)
   target_sources(NordPianoPrototype PRIVATE
