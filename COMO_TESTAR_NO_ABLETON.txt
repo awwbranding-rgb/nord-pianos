@@ -1,0 +1,31 @@
+NPno Piano Reader -- teste no Ableton Live (Windows 64 bits)
+
+SITUACAO: O motor e o decodificador estao implementados e testados em Linux;
+A compilacao Windows do VST3 nao foi executada aqui.
+
+OPCAO 1 - COMPILAR NO PROPRIO WINDOWS:
+1) Instale Visual Studio 2022, componente 'Desktop development with C++',
+   CMake e Git. E preciso internet para a primeira compilacao JUCE.
+2) Extraia este ZIP no seu PC.
+3) Execute build_windows.bat com duplo clique.
+4) Se a compilacao concluir, procure a pasta 'NPno Piano Reader.vst3'
+   em build-win\NordPianoPrototype_artefacts\Release\VST3\.
+5) Copie essa pasta inteira para C:\Program Files\Common Files\VST3\.
+6) No Ableton Live: Settings/Preferences > Plug-Ins > VST3 System Folders > On,
+   depois Rescan.
+7) Crie uma MIDI track, carregue 'NPno Piano Reader', clique
+   'Carregar piano .npno' e selecione Black Upright Med 6.1.npno.
+8) Para tocar, abra um clipe MIDI e desenhe notas no piano roll.
+   Nao e necessario possuir um teclado Nord conectado.
+
+OPCAO 2 - COMPILAR NA NUVEM (GITHUB ACTIONS):
+1) Crie um repositorio GitHub pessoal e envie o conteudo deste ZIP
+   (preserve o arquivo oculto .github/workflows/windows-vst3.yml).
+2) Na pagina 'Actions', selecione 'Build Windows VST3' > Run workflow.
+3) Quando terminar, baixe o artefato NPno-Piano-Reader-Windows-VST3.
+4) Instale e teste como descrito acima.
+
+AVISO: o build VST3 Windows nao foi verificado neste ambiente. Se houver
+erro, use o log de compilacao para corrigir o codigo/SDK. Esta e uma
+implementacao experimental, nao uma emulacao comprovadamente fiel do Nord.
+Nenhum sample da Nord esta incluso neste projeto.

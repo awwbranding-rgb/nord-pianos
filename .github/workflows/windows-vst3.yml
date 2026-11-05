@@ -1,0 +1,21 @@
+name: Build Windows VST3
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+jobs:
+  vst3:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure JUCE / VST3
+        run: cmake -S . -B build-win -G "Visual Studio 17 2022" -A x64 -DBUILD_PLUGIN=ON
+      - name: Build Release
+        run: cmake --build build-win --config Release --parallel 4
+      - name: Upload VST3
+        uses: actions/upload-artifact@v4
+        with:
+          name: NPno-Piano-Reader-Windows-VST3
+          path: build-win/NordPianoPrototype_artefacts/Release/VST3/*.vst3
+          if-no-files-found: error
+          retention-days: 30
