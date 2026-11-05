@@ -2,22 +2,30 @@ cmake_minimum_required(VERSION 3.22)
 project(NordPianoReader VERSION 0.2.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 add_library(npno_reader STATIC src/NpnoReader.cpp)
 target_include_directories(npno_reader PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
+
 add_library(npno_decoder STATIC src/NpnoDecoder.cpp)
 target_link_libraries(npno_decoder PUBLIC npno_reader)
+
 add_library(piano_engine STATIC src/PianoEngine.cpp)
 target_link_libraries(piano_engine PUBLIC npno_decoder)
-add_executable(check_npno tests/check_npno.cpp)
-add_executable(decode_npno tests/decode_npno.cpp)
-target_link_libraries(decode_npno PRIVATE npno_decoder)
-add_executable(render_piano tests/render_piano.cpp)
-target_link_libraries(render_piano PRIVATE piano_engine)
-add_executable(test_dual_layer tests/test_dual_layer.cpp)
-target_link_libraries(test_dual_layer PRIVATE piano_engine)
-add_executable(test_long_sustain tests/test_long_sustain.cpp)
-target_link_libraries(test_long_sustain PRIVATE piano_engine)
-target_link_libraries(check_npno PRIVATE npno_reader)
+
+option(BUILD_TESTS "Build developer test console executables" OFF)
+if(BUILD_TESTS)
+  add_executable(check_npno tests/check_npno.cpp)
+  target_link_libraries(check_npno PRIVATE npno_reader)
+  add_executable(decode_npno tests/decode_npno.cpp)
+  target_link_libraries(decode_npno PRIVATE npno_decoder)
+  add_executable(render_piano tests/render_piano.cpp)
+  target_link_libraries(render_piano PRIVATE piano_engine)
+  add_executable(test_dual_layer tests/test_dual_layer.cpp)
+  target_link_libraries(test_dual_layer PRIVATE piano_engine)
+  add_executable(test_long_sustain tests/test_long_sustain.cpp)
+  target_link_libraries(test_long_sustain PRIVATE piano_engine)
+endif()
+
 option(BUILD_PLUGIN "Build VST3/AU plugin using JUCE" ON)
 if(BUILD_PLUGIN)
   include(FetchContent)
@@ -55,28 +63,29 @@ if(BUILD_PLUGIN)
   target_compile_definitions(NordPianoPrototype PUBLIC
     JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_VST3_CAN_REPLACE_VST2=0)
 
-  juce_add_console_app(render_ui_snapshot PRODUCT_NAME "RenderUISnapshot")
-  juce_generate_juce_header(render_ui_snapshot)
-  target_sources(render_ui_snapshot PRIVATE tests/render_ui_snapshot.cpp)
-  target_include_directories(render_ui_snapshot PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
-  target_link_libraries(render_ui_snapshot PRIVATE
-    NordPianoPrototype juce::juce_audio_utils
-    PUBLIC juce::juce_recommended_config_flags)
+  if(WIN32 AND BUILD_TESTS)
+    juce_add_console_app(render_ui_snapshot PRODUCT_NAME "RenderUISnapshot")
+    juce_generate_juce_header(render_ui_snapshot)
+    target_sources(render_ui_snapshot PRIVATE tests/render_ui_snapshot.cpp)
+    target_include_directories(render_ui_snapshot PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+    target_link_libraries(render_ui_snapshot PRIVATE
+      NordPianoPrototype juce::juce_audio_utils
+      PUBLIC juce::juce_recommended_config_flags)
 
-  juce_add_console_app(test_processor_runtime
-    PRODUCT_NAME "TestProcessorRuntime")
-  juce_generate_juce_header(test_processor_runtime)
-  target_sources(test_processor_runtime PRIVATE tests/test_processor_runtime.cpp)
-  target_include_directories(test_processor_runtime PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
-  target_link_libraries(test_processor_runtime PRIVATE
-    NordPianoPrototype juce::juce_audio_utils
-    PUBLIC juce::juce_recommended_config_flags)
+    juce_add_console_app(test_processor_runtime PRODUCT_NAME "TestProcessorRuntime")
+    juce_generate_juce_header(test_processor_runtime)
+    target_sources(test_processor_runtime PRIVATE tests/test_processor_runtime.cpp)
+    target_include_directories(test_processor_runtime PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+    target_link_libraries(test_processor_runtime PRIVATE
+      NordPianoPrototype juce::juce_audio_utils
+      PUBLIC juce::juce_recommended_config_flags)
 
-  juce_add_console_app(test_sustain_loop PRODUCT_NAME "test_sustain_loop")
-  juce_generate_juce_header(test_sustain_loop)
-  target_sources(test_sustain_loop PRIVATE tests/test_sustain_loop.cpp)
-  target_include_directories(test_sustain_loop PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
-  target_link_libraries(test_sustain_loop PRIVATE
-    NordPianoPrototype juce::juce_audio_utils
-    PUBLIC juce::juce_recommended_config_flags)
+    juce_add_console_app(test_sustain_loop PRODUCT_NAME "test_sustain_loop")
+    juce_generate_juce_header(test_sustain_loop)
+    target_sources(test_sustain_loop PRIVATE tests/test_sustain_loop.cpp)
+    target_include_directories(test_sustain_loop PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+    target_link_libraries(test_sustain_loop PRIVATE
+      NordPianoPrototype juce::juce_audio_utils
+      PUBLIC juce::juce_recommended_config_flags)
+  endif()
 endif()
