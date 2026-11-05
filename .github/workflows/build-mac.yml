@@ -14,70 +14,41 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Dependencies
+      - name: Select Xcode
         run: |
-          brew install ninja
+          sudo xcode-select -s /Applications/Xcode_15.4.app || sudo xcode-select -s /Applications/Xcode.app
+          xcodebuild -version
 
       - name: Configure CMake
         run: |
           cmake -S . -B build-mac \
-            -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
+            -G Xcode \
             -DCMAKE_OSX_ARCHITECTURES="arm64" \
             -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0" \
-            -DBUILD_PLUGIN=ON 2>&1 | tee cmake_output.log
-
-      - name: Show CMake Log on Failure
-        if: failure()
-        run: |
-          echo "### CMake Configuration Output" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          tail -n 100 cmake_output.log >> $GITHUB_STEP_SUMMARY || true
-          echo '```' >> $GITHUB_STEP_SUMMARY
+            -DBUILD_PLUGIN=ON
 
       - name: Build Plugins
         run: |
-          cmake --build build-mac --target NordPianoPrototype_All --parallel 2>&1 | tee build_output.log
-          echo "### Build Output (Last 30 lines)" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          tail -n 30 build_output.log >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-
-      - name: Show Compiler Log on Failure
-        if: failure()
-        run: |
-          echo "### Compiler Error Output" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          tail -n 150 build_output.log >> $GITHUB_STEP_SUMMARY || true
-          echo '```' >> $GITHUB_STEP_SUMMARY
+          cmake --build build-mac --config Release --parallel 4
 
       - name: Ad-Hoc Sign Binaries
         run: |
-          find build-mac -name "*.vst3" -exec codesign --force --deep --sign - {} + || true
-          find build-mac -name "*.component" -exec codesign --force --deep --sign - {} + || true
-          find build-mac -name "*.app" -exec codesign --force --deep --sign - {} + || true
+          find build-mac/NordPianoPrototype_artefacts/Release -name "*.vst3" -exec codesign --force --deep --sign - {} + || true
+          find build-mac/NordPianoPrototype_artefacts/Release -name "*.component" -exec codesign --force --deep --sign - {} + || true
+          find build-mac/NordPianoPrototype_artefacts/Release -name "*.app" -exec codesign --force --deep --sign - {} + || true
 
       - name: Prepare Package
         run: |
           mkdir -p package_mac
-          echo "### Searching Generated Bundles" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          find build-mac -name "*.vst3" -o -name "*.component" -o -name "*.app" | tee -a $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-
-          find build-mac -name "*.vst3" -exec cp -R "{}" package_mac/ \;
-          find build-mac -name "*.component" -exec cp -R "{}" package_mac/ \;
-          find build-mac -name "*.app" -exec cp -R "{}" package_mac/ \;
-
-          echo "### Package Contents" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          ls -la package_mac/ | tee -a $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-
+          find build-mac/NordPianoPrototype_artefacts/Release -name "*.vst3" -exec cp -R "{}" package_mac/ \;
+          find build-mac/NordPianoPrototype_artefacts/Release -name "*.component" -exec cp -R "{}" package_mac/ \;
+          find build-mac/NordPianoPrototype_artefacts/Release -name "*.app" -exec cp -R "{}" package_mac/ \;
+          echo "Conteudo do pacote Mac:"
+          ls -la package_mac/
           echo "Instalacao Nord Pianos no Mac:" > package_mac/LEIAME.txt
           echo "1. VST3: Copie Nord Pianos.vst3 para /Library/Audio/Plug-Ins/VST3/" >> package_mac/LEIAME.txt
           echo "2. AU: Copie Nord Pianos.component para /Library/Audio/Plug-Ins/Components/" >> package_mac/LEIAME.txt
-          echo "3. Standalone: Arraste Nord Pianos.app para Aplicativos" >> package_mac/LEIAME.txt
+          echo "3. Standalone: Arraste Nord Pianos.app para a pasta Aplicativos" >> package_mac/LEIAME.txt
           echo "4. Sons: Coloque seus timbres .npno em ~/Music/Nord Pianos/Sounds/" >> package_mac/LEIAME.txt
           cd package_mac && zip -r -y ../Nord_Pianos_Mac_Apple_Silicon.zip * && cd ..
           ls -lh Nord_Pianos_Mac_Apple_Silicon.zip
