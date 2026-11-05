@@ -49,28 +49,25 @@ jobs:
 
       - name: Ad-Hoc Sign Binaries
         run: |
-          find build-mac/NordPianoPrototype_artefacts/Release -name "*.vst3" -exec codesign --force --deep --sign - {} + || true
-          find build-mac/NordPianoPrototype_artefacts/Release -name "*.component" -exec codesign --force --deep --sign - {} + || true
-          find build-mac/NordPianoPrototype_artefacts/Release -name "*.app" -exec codesign --force --deep --sign - {} + || true
+          find build-mac -name "*.vst3" -exec codesign --force --deep --sign - {} + || true
+          find build-mac -name "*.component" -exec codesign --force --deep --sign - {} + || true
+          find build-mac -name "*.app" -exec codesign --force --deep --sign - {} + || true
 
       - name: Prepare Package
         run: |
           mkdir -p package_mac
-          if [ -d "build-mac/NordPianoPrototype_artefacts/Release/VST3/Nord Pianos.vst3" ]; then
-            cp -R "build-mac/NordPianoPrototype_artefacts/Release/VST3/Nord Pianos.vst3" package_mac/
-          fi
-          if [ -d "build-mac/NordPianoPrototype_artefacts/Release/AU/Nord Pianos.component" ]; then
-            cp -R "build-mac/NordPianoPrototype_artefacts/Release/AU/Nord Pianos.component" package_mac/
-          fi
-          if [ -d "build-mac/NordPianoPrototype_artefacts/Release/Standalone/Nord Pianos.app" ]; then
-            cp -R "build-mac/NordPianoPrototype_artefacts/Release/Standalone/Nord Pianos.app" package_mac/
-          fi
+          find build-mac -name "Nord Pianos.vst3" -type d -prune -exec cp -R {} package_mac/ \;
+          find build-mac -name "Nord Pianos.component" -type d -prune -exec cp -R {} package_mac/ \;
+          find build-mac -name "Nord Pianos.app" -type d -prune -exec cp -R {} package_mac/ \;
+          echo "Conteudo gerado para o pacote:"
+          ls -la package_mac/
           echo "Instalacao Nord Pianos no Mac:" > package_mac/LEIAME.txt
           echo "1. VST3: Copie Nord Pianos.vst3 para /Library/Audio/Plug-Ins/VST3/" >> package_mac/LEIAME.txt
           echo "2. AU: Copie Nord Pianos.component para /Library/Audio/Plug-Ins/Components/" >> package_mac/LEIAME.txt
           echo "3. Standalone: Arraste Nord Pianos.app para Aplicativos" >> package_mac/LEIAME.txt
           echo "4. Sons: Coloque seus timbres .npno em ~/Music/Nord Pianos/Sounds/" >> package_mac/LEIAME.txt
           cd package_mac && zip -r ../Nord_Pianos_Mac_Apple_Silicon.zip * && cd ..
+          ls -lh Nord_Pianos_Mac_Apple_Silicon.zip
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
