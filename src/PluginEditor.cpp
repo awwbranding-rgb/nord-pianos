@@ -445,7 +445,7 @@ NordPianoPrototypeAudioProcessorEditor::NordPianoPrototypeAudioProcessorEditor(N
         }
     };
 
-    setupRotary(sliderPianoVol, "LEVEL", 0.0, 1.5, processor.getEngine().getLayerAConfig().volume.load());
+    setupVerticalFader(sliderPianoVol, "LEVEL", 0.0, 1.5, processor.getEngine().getLayerAConfig().volume.load());
     sliderPianoVol.onValueChange = [this]() {
         if (auto* p = processor.getAPVTS().getParameter("piano_vol"))
             p->setValueNotifyingHost(p->convertTo0to1(float(sliderPianoVol.getValue())));
@@ -678,7 +678,7 @@ NordPianoPrototypeAudioProcessorEditor::NordPianoPrototypeAudioProcessorEditor(N
         });
     };
 
-    setupRotary(sliderPadVol, "PAD LEVEL", 0.0, 1.5, processor.getEngine().getLayerBConfig().volume.load());
+    setupVerticalFader(sliderPadVol, "PAD LEVEL", 0.0, 1.5, processor.getEngine().getLayerBConfig().volume.load());
     sliderPadVol.onValueChange = [this]() {
         if (auto* p = processor.getAPVTS().getParameter("pad_vol"))
             p->setValueNotifyingHost(p->convertTo0to1(float(sliderPadVol.getValue())));
@@ -1067,6 +1067,61 @@ bool NordPianoPrototypeAudioProcessorEditor::handleKeyPress(const juce::KeyPress
 //==============================================================================
 // Helpers: Setup Controls
 //==============================================================================
+static void drawVerticalVuMeter(juce::Graphics& g, float x, float y, float w, float h, float levelNorm) {
+    // Smoky Acrylic Bezel Background
+    g.setColour(juce::Colour::fromRGB(6, 8, 12));
+    g.fillRoundedRectangle(x - 2.5f, y - 2.5f, w + 5.0f, h + 5.0f, 3.0f);
+    g.setColour(juce::Colour::fromRGB(36, 42, 54));
+    g.drawRoundedRectangle(x - 2.5f, y - 2.5f, w + 5.0f, h + 5.0f, 3.0f, 1.0f);
+
+    const int numSegments = 16;
+    const float segGap = 2.0f;
+    const float segH = (h - float(numSegments - 1) * segGap) / float(numSegments);
+    const int activeSegments = juce::jlimit(0, numSegments, int(std::round(levelNorm * float(numSegments))));
+
+    for (int i = 0; i < numSegments; ++i) {
+        float sy = y + h - float(i + 1) * (segH + segGap);
+        bool isLit = (i < activeSegments);
+
+        juce::Colour litColor;
+        juce::Colour unlitColor;
+        if (i < 10) {
+            litColor = juce::Colour::fromRGB(45, 225, 60);
+            unlitColor = juce::Colour::fromRGB(12, 28, 16);
+        } else if (i < 13) {
+            litColor = juce::Colour::fromRGB(255, 195, 30);
+            unlitColor = juce::Colour::fromRGB(34, 26, 8);
+        } else {
+            litColor = juce::Colour::fromRGB(255, 42, 52);
+            unlitColor = juce::Colour::fromRGB(38, 8, 10);
+        }
+
+        if (isLit) {
+            g.setColour(litColor.withAlpha(0.40f));
+            g.fillRoundedRectangle(x - 1.2f, sy - 1.0f, w + 2.4f, segH + 2.0f, 1.5f);
+            g.setColour(litColor);
+        } else {
+            g.setColour(unlitColor);
+        }
+        g.fillRoundedRectangle(x, sy, w, segH, 1.0f);
+
+        if (isLit) {
+            g.setColour(juce::Colour::fromRGB(255, 255, 255).withAlpha(0.6f));
+            g.fillRect(x + 1.0f, sy + 0.5f, w - 2.0f, 1.0f);
+        }
+    }
+}
+
+void NordPianoPrototypeAudioProcessorEditor::setupVerticalFader(juce::Slider& s, const juce::String& text, double minV, double maxV, double defV) {
+    juce::ignoreUnused(text);
+    s.setSliderStyle(juce::Slider::LinearVertical);
+    s.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    s.setRange(minV, maxV, 0.01);
+    s.setValue(defV, juce::dontSendNotification);
+    s.setLookAndFeel(&blackKnobLAF);
+    addAndMakeVisible(s);
+}
+
 void NordPianoPrototypeAudioProcessorEditor::setupRotary(juce::Slider& s, const juce::String& text, double minV, double maxV, double defV) {
     juce::ignoreUnused(text);
     s.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -1573,13 +1628,8 @@ void NordPianoPrototypeAudioProcessorEditor::paint(juce::Graphics& g) {
     // DELAY Module (x: 18, y: 424, w: 156, h: 292)
     drawPanelCard(g, {18, 424, 156, 292}, "DELAY", true);
     // Delay meters flanking knobs
-    for (int seg = 0; seg < 14; ++seg) {
-        float dy = 548.0f - seg * 6.0f;
-        juce::Colour c = (seg < 9) ? juce::Colour::fromRGB(190, 40, 255) : juce::Colour::fromRGB(0, 220, 255);
-        g.setColour(c.withAlpha(seg < 9 ? 0.95f : 0.2f));
-        g.fillRect(36.0f, dy, 5.0f, 4.5f);
-        g.fillRect(151.0f, dy, 5.0f, 4.5f);
-    }
+    drawVerticalVuMeter(g, 34.0f, 482.0f, 6.0f, 70.0f, 0.65f);
+    drawVerticalVuMeter(g, 153.0f, 482.0f, 6.0f, 70.0f, 0.65f);
     drawKnobGradTicks(g, 63.0f, 516.0f, 16.0f, -2.4f, 2.4f, 7, false);
     drawKnobGradTicks(g, 99.0f, 516.0f, 16.0f, -2.4f, 2.4f, 7, false);
     drawKnobGradTicks(g, 135.0f, 516.0f, 16.0f, -2.4f, 2.4f, 7, false);
@@ -1593,42 +1643,36 @@ void NordPianoPrototypeAudioProcessorEditor::paint(juce::Graphics& g) {
     // COLUMN 2: PIANO ENGINE & COMP (x: 180, w: 182)
     drawPanelCard(g, {180, 100, 182, 420}, "");
     // Red Backlit Header Pill: PIANO
-    juce::Rectangle<float> pianoPill(194.0f, 108.0f, 154.0f, 26.0f);
+    juce::Rectangle<float> pianoPill(194.0f, 108.0f, 154.0f, 24.0f);
     g.setColour(juce::Colour::fromRGB(185, 26, 36));
     g.fillRoundedRectangle(pianoPill, 3.0f);
     g.setFont(juce::Font(juce::FontOptions(13.0f, juce::Font::bold)));
     g.setColour(juce::Colour::fromRGB(255, 255, 255));
     g.drawText("PIANO", pianoPill, juce::Justification::centred);
 
-    // Model 7-Segment Display & Flanking Meters
-    draw7SegmentNumber(g, 226.0f, 142.0f, 90.0f, 56.0f, 1);
-    g.setFont(juce::Font(juce::FontOptions(8.5f, juce::Font::bold)));
-    g.setColour(juce::Colour::fromRGB(160, 170, 185));
-    g.drawText("MODEL", 226, 202, 90, 12, juce::Justification::centred);
+    // Model 7-Segment Display & Label
+    draw7SegmentNumber(g, 236.0f, 138.0f, 70.0f, 38.0f, 1);
+    g.setFont(juce::Font(juce::FontOptions(8.0f, juce::Font::bold)));
+    g.setColour(juce::Colour::fromRGB(150, 160, 175));
+    g.drawText("MODEL", 236, 176, 70, 12, juce::Justification::centred);
 
-    // Flanking multi-color LED meters
-    for (int seg = 0; seg < 12; ++seg) {
-        float my = 192.0f - seg * 4.6f;
-        juce::Colour c = (seg < 8) ? juce::Colour::fromRGB(200, 40, 255) : juce::Colour::fromRGB(240, 40, 50);
-        g.setColour(c.withAlpha(seg < 9 ? 0.95f : 0.2f));
-        g.fillRect(202.0f, my, 7.0f, 3.5f);
-        g.fillRect(333.0f, my, 7.0f, 3.5f);
-    }
+    // Robust Vertical Studio LED VU Ladder Meter alongside the Piano Fader
+    float pLevel = float(sliderPianoVol.getValue()) / 1.5f;
+    drawVerticalVuMeter(g, 196.0f, 226.0f, 10.0f, 188.0f, pLevel);
 
-    // Piano Select Rotary Encoder with Red Notched Ring
-    drawNordEncoder(g, 271.0f, 292.0f, 30.0f);
+    // Fader Section Labels & dB Scale markers
     g.setFont(juce::Font(juce::FontOptions(8.5f, juce::Font::bold)));
-    g.setColour(juce::Colour::fromRGB(140, 150, 165));
-    g.drawText("LIST VIEW", 194, 334, 154, 12, juce::Justification::centred);
+    g.setColour(juce::Colour::fromRGB(175, 185, 200));
+    g.drawText("LEVEL", 194, 422, 154, 12, juce::Justification::centred);
 
     // LED dots for STR RES & OPN STR
     g.setColour(juce::Colour::fromRGB(229, 57, 53));
-    g.fillEllipse(204.0f, 356.0f, 6.0f, 6.0f);
-    g.fillEllipse(280.0f, 356.0f, 6.0f, 6.0f);
+    g.fillEllipse(204.0f, 442.0f, 5.0f, 5.0f);
+    g.fillEllipse(280.0f, 442.0f, 5.0f, 5.0f);
     g.setFont(juce::Font(juce::FontOptions(8.0f, juce::Font::bold)));
     g.setColour(juce::Colour::fromRGB(215, 225, 240));
-    g.drawText("STR RES", 214, 352, 54, 14, juce::Justification::left);
-    g.drawText("OPN STR", 290, 352, 54, 14, juce::Justification::left);
+    g.drawText("STR RES", 212, 438, 54, 14, juce::Justification::left);
+    g.drawText("OPN STR", 288, 438, 54, 14, juce::Justification::left);
 
     // COMP Module (x: 180, y: 528, w: 182, h: 188)
     drawPanelCard(g, {180, 528, 182, 188}, "COMP", true);
@@ -1726,42 +1770,36 @@ void NordPianoPrototypeAudioProcessorEditor::paint(juce::Graphics& g) {
     // COLUMN 4: SYNTH ENGINE & FEATURES / KEY RANGE (x: 662, w: 182)
     drawPanelCard(g, {662, 100, 182, 420}, "");
     // Red Backlit Header Pill: SYNTH
-    juce::Rectangle<float> synthPill(676.0f, 108.0f, 154.0f, 26.0f);
+    juce::Rectangle<float> synthPill(676.0f, 108.0f, 154.0f, 24.0f);
     g.setColour(juce::Colour::fromRGB(185, 26, 36));
     g.fillRoundedRectangle(synthPill, 3.0f);
     g.setFont(juce::Font(juce::FontOptions(13.0f, juce::Font::bold)));
     g.setColour(juce::Colour::fromRGB(255, 255, 255));
     g.drawText("SYNTH", synthPill, juce::Justification::centred);
 
-    // Sample 7-Segment Display & Flanking Meters
-    draw7SegmentNumber(g, 708.0f, 142.0f, 90.0f, 56.0f, 3);
-    g.setFont(juce::Font(juce::FontOptions(8.5f, juce::Font::bold)));
-    g.setColour(juce::Colour::fromRGB(160, 170, 185));
-    g.drawText("SAMPLE", 708, 202, 90, 12, juce::Justification::centred);
+    // Sample 7-Segment Display & Label
+    draw7SegmentNumber(g, 718.0f, 138.0f, 70.0f, 38.0f, 3);
+    g.setFont(juce::Font(juce::FontOptions(8.0f, juce::Font::bold)));
+    g.setColour(juce::Colour::fromRGB(150, 160, 175));
+    g.drawText("SAMPLE", 718, 176, 70, 12, juce::Justification::centred);
 
-    // Flanking multi-color LED meters
-    for (int seg = 0; seg < 12; ++seg) {
-        float my = 192.0f - seg * 4.6f;
-        juce::Colour c = (seg < 8) ? juce::Colour::fromRGB(200, 40, 255) : juce::Colour::fromRGB(240, 40, 50);
-        g.setColour(c.withAlpha(seg < 9 ? 0.95f : 0.2f));
-        g.fillRect(684.0f, my, 7.0f, 3.5f);
-        g.fillRect(815.0f, my, 7.0f, 3.5f);
-    }
+    // Robust Vertical Studio LED VU Ladder Meter alongside the Synth Fader
+    float sLevel = float(sliderPadVol.getValue()) / 1.5f;
+    drawVerticalVuMeter(g, 678.0f, 226.0f, 10.0f, 188.0f, sLevel);
 
-    // Synth Select Rotary Encoder with Red Notched Ring
-    drawNordEncoder(g, 753.0f, 292.0f, 30.0f);
+    // Fader Section Labels & dB Scale markers
     g.setFont(juce::Font(juce::FontOptions(8.5f, juce::Font::bold)));
-    g.setColour(juce::Colour::fromRGB(140, 150, 165));
-    g.drawText("LIST VIEW", 676, 334, 154, 12, juce::Justification::centred);
+    g.setColour(juce::Colour::fromRGB(175, 185, 200));
+    g.drawText("PAD LEVEL", 676, 422, 154, 12, juce::Justification::centred);
 
     // LED dots for LNG REL & NO SENS
     g.setColour(juce::Colour::fromRGB(229, 57, 53));
-    g.fillEllipse(686.0f, 356.0f, 6.0f, 6.0f);
-    g.fillEllipse(762.0f, 356.0f, 6.0f, 6.0f);
+    g.fillEllipse(686.0f, 442.0f, 5.0f, 5.0f);
+    g.fillEllipse(762.0f, 442.0f, 5.0f, 5.0f);
     g.setFont(juce::Font(juce::FontOptions(8.0f, juce::Font::bold)));
     g.setColour(juce::Colour::fromRGB(215, 225, 240));
-    g.drawText("LNG REL", 696, 352, 54, 14, juce::Justification::left);
-    g.drawText("NO SENS", 772, 352, 54, 14, juce::Justification::left);
+    g.drawText("LNG REL", 694, 438, 54, 14, juce::Justification::left);
+    g.drawText("NO SENS", 770, 438, 54, 14, juce::Justification::left);
 
     // FEATURES & KEY RANGE (x: 662, y: 528, w: 182, h: 188)
     drawPanelCard(g, {662, 528, 182, 188}, "");
@@ -1783,13 +1821,8 @@ void NordPianoPrototypeAudioProcessorEditor::paint(juce::Graphics& g) {
     // COLUMN 5: CHORUS, TREMOLO & REVERB (x: 850, w: 156)
     // CHORUS Module (top)
     drawPanelCard(g, {850, 100, 156, 196}, "CHORUS", true);
-    // Chorus meters
-    for (int seg = 0; seg < 10; ++seg) {
-        float cy = 196.0f - seg * 6.0f;
-        juce::Colour c = (seg < 7) ? juce::Colour::fromRGB(190, 40, 255) : juce::Colour::fromRGB(0, 220, 255);
-        g.setColour(c.withAlpha(seg < 6 ? 0.95f : 0.2f));
-        g.fillRect(864.0f, cy, 5.0f, 4.5f);
-    }
+    // Chorus meter
+    drawVerticalVuMeter(g, 862.0f, 146.0f, 6.0f, 58.0f, 0.55f);
     drawKnobGradTicks(g, 893.0f, 176.0f, 16.0f, -2.4f, 2.4f, 7, false);
     drawKnobGradTicks(g, 929.0f, 176.0f, 16.0f, -2.4f, 2.4f, 7, false);
     drawKnobGradTicks(g, 965.0f, 176.0f, 16.0f, -2.4f, 2.4f, 7, false);
@@ -2042,12 +2075,12 @@ void NordPianoPrototypeAudioProcessorEditor::resized() {
     //==========================================================================
     // COLUMN 2: PIANO ENGINE & COMP (x: 180, w: 182)
     //==========================================================================
-    btnPianoSelect.setBounds(200, 220, 142, 26);
-    sliderPianoSelect.setBounds(241, 262, 60, 60);
+    btnPianoSelect.setBounds(198, 190, 146, 26);
+    sliderPianoVol.setBounds(228, 224, 82, 192);
 
     // Push buttons (String Res & Open String)
-    btnStringRes.setBounds(200, 372, 68, 24);
-    btnPedalNoise.setBounds(274, 372, 68, 24);
+    btnStringRes.setBounds(198, 458, 70, 26);
+    btnPedalNoise.setBounds(274, 458, 70, 26);
 
     // Comp Knob & Button
     sliderCompressor.setBounds(242, 570, 58, 54);
@@ -2080,12 +2113,12 @@ void NordPianoPrototypeAudioProcessorEditor::resized() {
     //==========================================================================
     // COLUMN 4: SYNTH ENGINE & FEATURES / KEY RANGE (x: 662, w: 182)
     //==========================================================================
-    btnPadSelect.setBounds(682, 220, 142, 26);
-    sliderPadCutoff.setBounds(723, 262, 60, 60);
+    btnPadSelect.setBounds(680, 190, 146, 26);
+    sliderPadVol.setBounds(710, 224, 82, 192);
 
     // Synth buttons (Long Release & No Sens)
-    btnTimbreSoft.setBounds(682, 372, 68, 24); // LNG REL
-    btnTimbreMid.setBounds(756, 372, 68, 24);  // NO SENS
+    btnTimbreSoft.setBounds(680, 458, 70, 26); // LNG REL
+    btnTimbreMid.setBounds(756, 458, 70, 26);  // NO SENS
 
     // Features buttons
     btnTimbreRaw.setBounds(682, 560, 68, 24);    // NO PDL

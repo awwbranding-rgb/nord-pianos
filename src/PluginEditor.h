@@ -81,61 +81,115 @@ public:
                           float sliderPos, float minSliderPos, float maxSliderPos,
                           const juce::Slider::SliderStyle style, juce::Slider& slider) override {
         if (slider.isVertical()) {
-            const float trackW = 5.0f;
-            const float trackX = x + width * 0.5f - trackW * 0.5f;
+            const float cx = x + width * 0.5f;
+            const float trackW = 7.0f;
+            const float trackX = cx - trackW * 0.5f;
+            const float topY = (float)y + 6.0f;
+            const float botY = (float)(y + height) - 6.0f;
+            const float trackH = botY - topY;
 
-            // Fader Background Groove with shadow
-            g.setColour(juce::Colour::fromRGB(8, 10, 14));
-            g.fillRoundedRectangle(trackX, (float)y, trackW, (float)height, 2.5f);
-            g.setColour(juce::Colour::fromRGB(32, 38, 48));
-            g.drawRoundedRectangle(trackX, (float)y, trackW, (float)height, 2.5f, 1.0f);
+            // 1. Recessed Fader Well Plate (#12151C to #0A0C10)
+            juce::Rectangle<float> well(cx - 24.0f, topY - 3.0f, 48.0f, trackH + 6.0f);
+            g.setColour(juce::Colour::fromRGB(2, 3, 5).withAlpha(0.85f));
+            g.fillRoundedRectangle(well.translated(0.0f, 2.0f), 4.0f); // cast shadow
 
-            // Glowing Neon Slit in Fader Slot
-            juce::Colour ledColor = slider.findColour(juce::Slider::thumbColourId, true);
-            g.setColour(ledColor.withAlpha(0.35f));
-            g.fillRoundedRectangle(trackX + 1.5f, (float)y + 4.0f, 2.0f, (float)height - 8.0f, 1.0f);
+            juce::ColourGradient wellGrad(juce::Colour::fromRGB(19, 23, 29), cx, topY,
+                                          juce::Colour::fromRGB(10, 12, 16), cx, botY, false);
+            g.setGradientFill(wellGrad);
+            g.fillRoundedRectangle(well, 3.5f);
 
-            // Active Colored LED Line from bottom up to thumb position
-            if (sliderPos < (float)(y + height)) {
-                g.setColour(ledColor);
-                g.fillRoundedRectangle(trackX + 1.0f, sliderPos, trackW - 2.0f, (float)(y + height) - sliderPos, 1.5f);
+            // Inner Shadow & Bevel Edge
+            g.setColour(juce::Colour::fromRGB(0, 0, 0).withAlpha(0.7f));
+            g.drawRoundedRectangle(well, 3.5f, 1.0f);
+            g.setColour(juce::Colour::fromRGB(45, 52, 65).withAlpha(0.5f));
+            g.drawRoundedRectangle(well.reduced(0.8f), 3.0f, 0.8f);
+
+            // 2. Calibrated dB Scale Ticks alongside the slot
+            struct Tick { float posNorm; const char* label; bool isZero; };
+            const Tick ticks[] = {
+                { 0.05f, "+6", false },
+                { 0.22f, "0", true },
+                { 0.40f, "-6", false },
+                { 0.58f, "-12", false },
+                { 0.78f, "-24", false },
+                { 0.95f, "oo", false }
+            };
+
+            for (const auto& tk : ticks) {
+                float ty = topY + tk.posNorm * trackH;
+                g.setColour(tk.isZero ? juce::Colour::fromRGB(229, 57, 53) : juce::Colour::fromRGB(110, 120, 135));
+                g.drawLine(cx - 21.0f, ty, cx - 14.0f, ty, tk.isZero ? 1.8f : 1.0f);
+                g.drawLine(cx + 14.0f, ty, cx + 21.0f, ty, tk.isZero ? 1.8f : 1.0f);
+                if (tk.isZero) {
+                    g.setColour(juce::Colour::fromRGB(229, 57, 53).withAlpha(0.35f));
+                    g.drawLine(cx - 14.0f, ty, cx + 14.0f, ty, 1.0f);
+                }
             }
 
-            // High-End Brushed Aluminum Fader Cap (Roland RD-2000 / Stage console style)
-            const float capW = 34.0f;
-            const float capH = 22.0f;
-            const float capX = x + width * 0.5f - capW * 0.5f;
-            const float capY = sliderPos - capH * 0.5f;
+            // 3. Central Slot Slit with Dark Inner Shadow
+            g.setColour(juce::Colour::fromRGB(5, 6, 9));
+            g.fillRoundedRectangle(trackX, topY, trackW, trackH, 2.5f);
+            g.setColour(juce::Colour::fromRGB(24, 28, 36));
+            g.drawRoundedRectangle(trackX, topY, trackW, trackH, 2.5f, 1.0f);
 
-            // Cast Drop Shadow
-            g.setColour(juce::Colour::fromRGB(0, 0, 0).withAlpha(0.75f));
-            g.fillRoundedRectangle(capX + 1.0f, capY + 3.0f, capW, capH, 3.0f);
+            // 4. Illuminated Neon Channel along fader position
+            juce::Colour neonColor = juce::Colour::fromRGB(229, 57, 53); // Nord Crimson Red
+            if (sliderPos < botY) {
+                float activeH = botY - sliderPos;
+                g.setColour(neonColor.withAlpha(0.25f));
+                g.fillRect(trackX + 1.0f, sliderPos, trackW - 2.0f, activeH);
+                g.setColour(neonColor);
+                g.fillRect(trackX + 2.5f, sliderPos, trackW - 5.0f, activeH);
+            }
 
-            // Beveled Metallic Cap Body
-            juce::ColourGradient capGrad(juce::Colour::fromRGB(180, 190, 205), capX, capY,
-                                         juce::Colour::fromRGB(55, 62, 74), capX, capY + capH, false);
-            capGrad.addColour(0.35, juce::Colour::fromRGB(115, 125, 140));
-            capGrad.addColour(0.65, juce::Colour::fromRGB(40, 46, 56));
+            // 5. Heavyweight Chunky 3D Aluminum Stage Fader Cap (Roland RD-2000 / Neve style)
+            const float capW = 42.0f;
+            const float capH = 46.0f;
+            const float capX = cx - capW * 0.5f;
+            const float capY = juce::jlimit(topY - 2.0f, botY - capH + 2.0f, sliderPos - capH * 0.5f);
+
+            // A. Deep 3D Cast Drop Shadow underneath cap
+            g.setColour(juce::Colour::fromRGB(0, 0, 0).withAlpha(0.85f));
+            g.fillRoundedRectangle(capX + 1.0f, capY + 4.0f, capW, capH, 4.0f);
+            g.setColour(juce::Colour::fromRGB(0, 0, 0).withAlpha(0.40f));
+            g.fillRoundedRectangle(capX + 2.0f, capY + 6.5f, capW, capH, 5.0f);
+
+            // B. Cap Base Metallic Body (Multi-stage brushed silver-graphite gradient)
+            juce::ColourGradient capGrad(juce::Colour::fromRGB(215, 222, 234), capX, capY,
+                                         juce::Colour::fromRGB(45, 52, 65), capX, capY + capH, false);
+            capGrad.addColour(0.25, juce::Colour::fromRGB(150, 160, 175));
+            capGrad.addColour(0.50, juce::Colour::fromRGB(95, 105, 120));
+            capGrad.addColour(0.75, juce::Colour::fromRGB(65, 74, 88));
             g.setGradientFill(capGrad);
-            g.fillRoundedRectangle(capX, capY, capW, capH, 2.5f);
+            g.fillRoundedRectangle(capX, capY, capW, capH, 3.5f);
 
-            // Bevel Highlight & Shadow Borders
-            g.setColour(juce::Colour::fromRGB(220, 230, 245).withAlpha(0.7f));
-            g.drawHorizontalLine((int)capY, capX + 1.0f, capX + capW - 1.0f);
-            g.setColour(juce::Colour::fromRGB(15, 18, 22));
-            g.drawHorizontalLine((int)(capY + capH), capX + 1.0f, capX + capW - 1.0f);
-            g.drawRoundedRectangle(capX, capY, capW, capH, 2.5f, 1.0f);
+            // C. Top Specular CNC-Machined Edge Highlight
+            g.setColour(juce::Colour::fromRGB(255, 255, 255).withAlpha(0.85f));
+            g.drawHorizontalLine(int(capY + 1.0f), capX + 3.0f, capX + capW - 3.0f);
+            g.setColour(juce::Colour::fromRGB(15, 18, 24));
+            g.drawHorizontalLine(int(capY + capH - 1.0f), capX + 2.0f, capX + capW - 2.0f);
+            g.setColour(juce::Colour::fromRGB(35, 42, 54));
+            g.drawRoundedRectangle(capX, capY, capW, capH, 3.5f, 1.2f);
 
-            // Horizontal Grip Grooves
-            g.setColour(juce::Colour::fromRGB(25, 30, 38).withAlpha(0.85f));
-            g.drawHorizontalLine((int)(capY + 6.0f), capX + 4.0f, capX + capW - 4.0f);
-            g.drawHorizontalLine((int)(capY + capH - 6.0f), capX + 4.0f, capX + capW - 4.0f);
+            // D. Tactile Grip Ridges (3 horizontal deep rubberized finger grooves)
+            for (int r = 0; r < 3; ++r) {
+                float ry = capY + 11.0f + float(r) * 11.0f;
+                // Shadow groove
+                g.setColour(juce::Colour::fromRGB(18, 22, 28));
+                g.fillRect(capX + 6.0f, ry, capW - 12.0f, 2.2f);
+                // Lower highlight line
+                g.setColour(juce::Colour::fromRGB(255, 255, 255).withAlpha(0.35f));
+                g.fillRect(capX + 6.0f, ry + 2.2f, capW - 12.0f, 1.0f);
+            }
 
-            // Center Illuminated LED Slit on Cap
-            g.setColour(ledColor);
-            g.fillRect(capX + 4.0f, sliderPos - 1.2f, capW - 8.0f, 2.4f);
-            g.setColour(juce::Colour::fromRGB(255, 255, 255).withAlpha(0.8f));
-            g.fillRect(capX + 10.0f, sliderPos - 0.5f, capW - 20.0f, 1.0f);
+            // E. Center Illuminated Marker Line (High-visibility neon Nord Red)
+            const float midCapY = capY + capH * 0.5f;
+            g.setColour(neonColor.withAlpha(0.45f));
+            g.fillRect(capX + 3.0f, midCapY - 2.0f, capW - 6.0f, 4.0f); // outer bloom
+            g.setColour(juce::Colour::fromRGB(255, 60, 70));
+            g.fillRect(capX + 4.0f, midCapY - 1.0f, capW - 8.0f, 2.0f); // core neon
+            g.setColour(juce::Colour::fromRGB(255, 255, 255));
+            g.fillRect(capX + 12.0f, midCapY - 0.5f, capW - 24.0f, 1.0f); // center specular glint
         } else {
             juce::LookAndFeel_V4::drawLinearSlider(g, x, y, width, height, sliderPos, minSliderPos, maxSliderPos, style, slider);
         }
@@ -433,6 +487,7 @@ private:
         void drawAllenScrew(juce::Graphics& g, float x, float y);
     void drawPanelCard(juce::Graphics& g, juce::Rectangle<int> bounds, const juce::String& title, bool hasLed = true);
     void setupRotary(juce::Slider& s, const juce::String& text, double minV, double maxV, double defV);
+    void setupVerticalFader(juce::Slider& s, const juce::String& text, double minV, double maxV, double defV);
     void setupPillButton(juce::TextButton& btn, const juce::String& text, bool isToggle = true);
     void showControlContextMenu(const juce::String& paramId, juce::Component* comp);
 
