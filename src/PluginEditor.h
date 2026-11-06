@@ -77,6 +77,52 @@ public:
         g.fillEllipse(centreX - 1.8f, centreY - 1.8f, 3.6f, 3.6f);
     }
 
+    void drawLinearSlider(juce::Graphics& g, int x, int y, int width, int height,
+                          float sliderPos, float minSliderPos, float maxSliderPos,
+                          const juce::Slider::SliderStyle style, juce::Slider& slider) override {
+        if (slider.isVertical()) {
+            const float trackW = 4.0f;
+            const float trackX = x + width * 0.5f - trackW * 0.5f;
+
+            // Fader Background Groove
+            g.setColour(juce::Colour::fromRGB(14, 16, 20));
+            g.fillRoundedRectangle(trackX, (float)y, trackW, (float)height, 2.0f);
+            g.setColour(juce::Colour::fromRGB(35, 40, 50));
+            g.drawRoundedRectangle(trackX, (float)y, trackW, (float)height, 2.0f, 1.0f);
+
+            // Active Colored LED Slit below thumb
+            juce::Colour ledColor = slider.findColour(juce::Slider::thumbColourId, true);
+            if (sliderPos < (float)(y + height)) {
+                g.setColour(ledColor.withAlpha(0.85f));
+                g.fillRoundedRectangle(trackX + 0.5f, sliderPos, trackW - 1.0f, (float)(y + height) - sliderPos, 1.5f);
+            }
+
+            // Brushed Aluminum / Matte Black Fader Cap
+            const float capW = 28.0f;
+            const float capH = 18.0f;
+            const float capX = x + width * 0.5f - capW * 0.5f;
+            const float capY = sliderPos - capH * 0.5f;
+
+            // Cap Shadow
+            g.setColour(juce::Colour::fromRGB(0, 0, 0).withAlpha(0.6f));
+            g.fillRoundedRectangle(capX + 1.0f, capY + 2.0f, capW, capH, 3.0f);
+
+            // Cap Body
+            juce::ColourGradient capGrad(juce::Colour::fromRGB(65, 72, 84), capX, capY,
+                                         juce::Colour::fromRGB(28, 32, 38), capX, capY + capH, false);
+            g.setGradientFill(capGrad);
+            g.fillRoundedRectangle(capX, capY, capW, capH, 2.5f);
+            g.setColour(juce::Colour::fromRGB(95, 105, 120));
+            g.drawRoundedRectangle(capX, capY, capW, capH, 2.5f, 1.0f);
+
+            // Center Colored Line on Fader Cap
+            g.setColour(ledColor);
+            g.fillRect(capX + 3.0f, sliderPos - 1.0f, capW - 6.0f, 2.0f);
+        } else {
+            juce::LookAndFeel_V4::drawLinearSlider(g, x, y, width, height, sliderPos, minSliderPos, maxSliderPos, style, slider);
+        }
+    }
+
     void drawButtonBackground(juce::Graphics& g, juce::Button& button,
                               const juce::Colour& backgroundColour,
                               bool shouldDrawButtonAsHighlighted,
@@ -365,6 +411,73 @@ private:
     juce::TextButton btnMidiCh{"1 v"};
     juce::TextButton btnOutput{"st. 1 v"};
     juce::TextButton btnSettings{juce::CharPointer_UTF8("\xe2\x9a\x99")}; // Cog icon
+
+    // Top Navigation Tabs (A, B, C, D)
+    int activeTab = 0; // 0 = Piano, 1 = Worship Pad, 2 = Synth Lead, 3 = Organ B3
+    juce::TextButton tabPiano{"A  Piano"};
+    juce::TextButton tabPad{"B  Worship Pad"};
+    juce::TextButton tabSynth{"C  Synth Lead"};
+    juce::TextButton tabOrgan{"D  Organ B3"};
+    juce::TextButton btnSplitLayer{"Split / Layer v"};
+
+    // 4-Channel Mixer Strips (Faders, Meters, Mute, Solo, On)
+    juce::Slider sliderVolA; // Piano
+    juce::Slider sliderVolB; // Pad
+    juce::Slider sliderVolC; // Synth
+    juce::Slider sliderVolD; // Organ
+    juce::TextButton btnOnA{"ON"};
+    juce::TextButton btnOnB{"ON"};
+    juce::TextButton btnOnC{"ON"};
+    juce::TextButton btnOnD{"ON"};
+    juce::TextButton btnMuteA{"M"};
+    juce::TextButton btnMuteB{"M"};
+    juce::TextButton btnMuteC{"M"};
+    juce::TextButton btnMuteD{"M"};
+    juce::TextButton btnSoloA{"S"};
+    juce::TextButton btnSoloB{"S"};
+    juce::TextButton btnSoloC{"S"};
+    juce::TextButton btnSoloD{"S"};
+
+    // Bank Selector Buttons (Bank A, B, C, D)
+    int activeBank = 0; // 0 = Bank A, 1 = Bank B, 2 = Bank C, 3 = Bank D
+    juce::TextButton btnBankA{"A"};
+    juce::TextButton btnBankB{"B"};
+    juce::TextButton btnBankC{"C"};
+    juce::TextButton btnBankD{"D"};
+
+    // Sound / Timbre Category Buttons
+    juce::TextButton btnCatEPiano{"E.Piano"};
+    juce::TextButton btnCatClav{"Clav"};
+    juce::TextButton btnCatOrgan{"Organ"};
+    juce::TextButton btnCatPad{"Pad"};
+    juce::TextButton btnCatSynth{"Synth"};
+    juce::TextButton btnCatStrings{"Strings"};
+    juce::TextButton btnCatMisc{"Misc"};
+
+    // Character Switches
+    juce::TextButton swDynamics{"Dynamics"};
+    juce::TextButton swPedalNoise{"Pedal Noise"};
+    juce::TextButton swDamperRes{"Damper Res"};
+
+    // Tone & Amp Knobs
+    juce::Slider sliderCutoff;
+    juce::Slider sliderReso;
+    juce::Slider sliderEnv;
+    juce::Slider sliderAmpAttack;
+    juce::Slider sliderAmpDecay;
+    juce::Slider sliderAmpRelease;
+
+    // Comp & Dynamics
+    juce::Slider sliderCompThresh;
+    juce::Slider sliderCompRatio;
+    juce::Slider sliderDynAttack;
+    juce::Slider sliderDynRelease;
+
+    // Effects
+    juce::TextButton btnFxChorus{"Chorus"};
+    juce::TextButton btnFxDelay{"Delay"};
+    juce::TextButton btnFxReverb{"Reverb"};
+    juce::Slider sliderFxMix;
 
     // Column 1: EQ / Tone & Dynamics
     juce::TextButton btnEqPiano{"PIANO"};

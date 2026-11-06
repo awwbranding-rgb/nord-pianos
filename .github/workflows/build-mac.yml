@@ -33,29 +33,29 @@ jobs:
 
       - name: Ad-Hoc Sign Binaries
         run: |
-          find build-mac/NordPianoPrototype_artefacts/Release -name "*.vst3" -exec codesign --force --deep --sign - {} + || true
-          find build-mac/NordPianoPrototype_artefacts/Release -name "*.component" -exec codesign --force --deep --sign - {} + || true
-          find build-mac/NordPianoPrototype_artefacts/Release -name "*.app" -exec codesign --force --deep --sign - {} + || true
+          find build-mac -name "*.vst3" -exec codesign --force --deep --sign - {} + || true
+          find build-mac -name "*.component" -exec codesign --force --deep --sign - {} + || true
+          find build-mac -name "*.app" -exec codesign --force --deep --sign - {} + || true
 
       - name: Prepare Package
         run: |
           mkdir -p package_mac
-          find build-mac/NordPianoPrototype_artefacts/Release -name "*.vst3" -exec cp -R "{}" package_mac/ \;
-          find build-mac/NordPianoPrototype_artefacts/Release -name "*.component" -exec cp -R "{}" package_mac/ \;
-          find build-mac/NordPianoPrototype_artefacts/Release -name "*.app" -exec cp -R "{}" package_mac/ \;
+          find build-mac -name "*.vst3" -exec cp -R "{}" package_mac/ \;
+          find build-mac -name "*.component" -exec cp -R "{}" package_mac/ \;
+          find build-mac -name "*.app" -exec cp -R "{}" package_mac/ \;
           echo "Conteudo do pacote Mac:"
           ls -la package_mac/
-          echo "Instalacao Nord Pianos no Mac:" > package_mac/LEIAME.txt
-          echo "1. VST3: Copie Nord Pianos.vst3 para /Library/Audio/Plug-Ins/VST3/" >> package_mac/LEIAME.txt
-          echo "2. AU: Copie Nord Pianos.component para /Library/Audio/Plug-Ins/Components/" >> package_mac/LEIAME.txt
-          echo "3. Standalone: Arraste Nord Pianos.app para a pasta Aplicativos" >> package_mac/LEIAME.txt
-          echo "4. Sons: Coloque seus timbres .npno em ~/Music/Nord Pianos/Sounds/" >> package_mac/LEIAME.txt
-          cd package_mac && zip -r -y ../Nord_Pianos_Mac_Apple_Silicon.zip * && cd ..
-          ls -lh Nord_Pianos_Mac_Apple_Silicon.zip
+          echo "Instalacao OmniStage no Mac:" > package_mac/LEIAME.txt
+          echo "1. VST3: Copie OmniStage.vst3 para /Library/Audio/Plug-Ins/VST3/" >> package_mac/LEIAME.txt
+          echo "2. AU: Copie OmniStage.component para /Library/Audio/Plug-Ins/Components/" >> package_mac/LEIAME.txt
+          echo "3. Standalone: Arraste OmniStage.app para a pasta Aplicativos" >> package_mac/LEIAME.txt
+          echo "4. Sons: Coloque seus timbres .npno em ~/Music/OmniStage/Sounds/" >> package_mac/LEIAME.txt
+          cd package_mac && zip -r -y ../OmniStage_Mac_Apple_Silicon.zip * && cd ..
+          ls -lh OmniStage_Mac_Apple_Silicon.zip
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Nord_Pianos_Mac_Apple_Silicon
-          path: Nord_Pianos_Mac_Apple_Silicon.zip
+          name: OmniStage_Mac_Apple_Silicon
+          path: OmniStage_Mac_Apple_Silicon.zip
           retention-days: 30
