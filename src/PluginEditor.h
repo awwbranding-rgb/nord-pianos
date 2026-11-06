@@ -81,43 +81,61 @@ public:
                           float sliderPos, float minSliderPos, float maxSliderPos,
                           const juce::Slider::SliderStyle style, juce::Slider& slider) override {
         if (slider.isVertical()) {
-            const float trackW = 4.0f;
+            const float trackW = 5.0f;
             const float trackX = x + width * 0.5f - trackW * 0.5f;
 
-            // Fader Background Groove
-            g.setColour(juce::Colour::fromRGB(14, 16, 20));
-            g.fillRoundedRectangle(trackX, (float)y, trackW, (float)height, 2.0f);
-            g.setColour(juce::Colour::fromRGB(35, 40, 50));
-            g.drawRoundedRectangle(trackX, (float)y, trackW, (float)height, 2.0f, 1.0f);
+            // Fader Background Groove with shadow
+            g.setColour(juce::Colour::fromRGB(8, 10, 14));
+            g.fillRoundedRectangle(trackX, (float)y, trackW, (float)height, 2.5f);
+            g.setColour(juce::Colour::fromRGB(32, 38, 48));
+            g.drawRoundedRectangle(trackX, (float)y, trackW, (float)height, 2.5f, 1.0f);
 
-            // Active Colored LED Slit below thumb
+            // Glowing Neon Slit in Fader Slot
             juce::Colour ledColor = slider.findColour(juce::Slider::thumbColourId, true);
+            g.setColour(ledColor.withAlpha(0.35f));
+            g.fillRoundedRectangle(trackX + 1.5f, (float)y + 4.0f, 2.0f, (float)height - 8.0f, 1.0f);
+
+            // Active Colored LED Line from bottom up to thumb position
             if (sliderPos < (float)(y + height)) {
-                g.setColour(ledColor.withAlpha(0.85f));
-                g.fillRoundedRectangle(trackX + 0.5f, sliderPos, trackW - 1.0f, (float)(y + height) - sliderPos, 1.5f);
+                g.setColour(ledColor);
+                g.fillRoundedRectangle(trackX + 1.0f, sliderPos, trackW - 2.0f, (float)(y + height) - sliderPos, 1.5f);
             }
 
-            // Brushed Aluminum / Matte Black Fader Cap
-            const float capW = 28.0f;
-            const float capH = 18.0f;
+            // High-End Brushed Aluminum Fader Cap (Roland RD-2000 / Stage console style)
+            const float capW = 34.0f;
+            const float capH = 22.0f;
             const float capX = x + width * 0.5f - capW * 0.5f;
             const float capY = sliderPos - capH * 0.5f;
 
-            // Cap Shadow
-            g.setColour(juce::Colour::fromRGB(0, 0, 0).withAlpha(0.6f));
-            g.fillRoundedRectangle(capX + 1.0f, capY + 2.0f, capW, capH, 3.0f);
+            // Cast Drop Shadow
+            g.setColour(juce::Colour::fromRGB(0, 0, 0).withAlpha(0.75f));
+            g.fillRoundedRectangle(capX + 1.0f, capY + 3.0f, capW, capH, 3.0f);
 
-            // Cap Body
-            juce::ColourGradient capGrad(juce::Colour::fromRGB(65, 72, 84), capX, capY,
-                                         juce::Colour::fromRGB(28, 32, 38), capX, capY + capH, false);
+            // Beveled Metallic Cap Body
+            juce::ColourGradient capGrad(juce::Colour::fromRGB(180, 190, 205), capX, capY,
+                                         juce::Colour::fromRGB(55, 62, 74), capX, capY + capH, false);
+            capGrad.addColour(0.35, juce::Colour::fromRGB(115, 125, 140));
+            capGrad.addColour(0.65, juce::Colour::fromRGB(40, 46, 56));
             g.setGradientFill(capGrad);
             g.fillRoundedRectangle(capX, capY, capW, capH, 2.5f);
-            g.setColour(juce::Colour::fromRGB(95, 105, 120));
+
+            // Bevel Highlight & Shadow Borders
+            g.setColour(juce::Colour::fromRGB(220, 230, 245).withAlpha(0.7f));
+            g.drawHorizontalLine((int)capY, capX + 1.0f, capX + capW - 1.0f);
+            g.setColour(juce::Colour::fromRGB(15, 18, 22));
+            g.drawHorizontalLine((int)(capY + capH), capX + 1.0f, capX + capW - 1.0f);
             g.drawRoundedRectangle(capX, capY, capW, capH, 2.5f, 1.0f);
 
-            // Center Colored Line on Fader Cap
+            // Horizontal Grip Grooves
+            g.setColour(juce::Colour::fromRGB(25, 30, 38).withAlpha(0.85f));
+            g.drawHorizontalLine((int)(capY + 6.0f), capX + 4.0f, capX + capW - 4.0f);
+            g.drawHorizontalLine((int)(capY + capH - 6.0f), capX + 4.0f, capX + capW - 4.0f);
+
+            // Center Illuminated LED Slit on Cap
             g.setColour(ledColor);
-            g.fillRect(capX + 3.0f, sliderPos - 1.0f, capW - 6.0f, 2.0f);
+            g.fillRect(capX + 4.0f, sliderPos - 1.2f, capW - 8.0f, 2.4f);
+            g.setColour(juce::Colour::fromRGB(255, 255, 255).withAlpha(0.8f));
+            g.fillRect(capX + 10.0f, sliderPos - 0.5f, capW - 20.0f, 1.0f);
         } else {
             juce::LookAndFeel_V4::drawLinearSlider(g, x, y, width, height, sliderPos, minSliderPos, maxSliderPos, style, slider);
         }
@@ -553,12 +571,14 @@ private:
     juce::TextButton btnTransUp{">"};
     juce::TextButton btnTuneDown{"<"};
     juce::TextButton btnTuneUp{">"};
+    juce::Slider sliderTune;
     juce::Slider sliderMainVolume;
 
     // Bottom Keyboard & Status
     std::unique_ptr<InteractivePianoKeyboard> pianoKeyboard;
     std::unique_ptr<MidiMapOverlay> midiMapOverlay;
     juce::Image pianoImage;
+    juce::Image imgOledGrandPiano;
 
     // Status indicators & UI synchronization
     bool midiLedLit = false;
