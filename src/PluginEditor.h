@@ -495,6 +495,7 @@ private:
     juce::TextButton swDynamics{"Dynamics"};
     juce::TextButton swPedalNoise{"Pedal Noise"};
     juce::TextButton swDamperRes{"Damper Res"};
+    juce::TextButton swSoftRelease{"Soft Release"};
 
     // Tone & Amp Knobs
     juce::Slider sliderCutoff;
@@ -576,6 +577,7 @@ private:
 
     juce::Slider sliderDelayTime, sliderDelayFeedback;
     juce::TextButton btnDelayOn{"ON"};
+    juce::TextButton btnTapTempo{"TAP"};
 
     juce::Slider sliderReverbAmount;
     juce::Slider sliderReverbTone;

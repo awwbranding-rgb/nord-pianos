@@ -791,6 +791,10 @@ NordPianoPrototypeAudioProcessorEditor::NordPianoPrototypeAudioProcessorEditor(N
             p->setValueNotifyingHost(p->convertTo0to1(float(sliderTremoloDepth.getValue())));
     };
 
+        addAndMakeVisible(btnTapTempo);
+    setupPillButton(btnTapTempo, "TAP", false);
+    btnTapTempo.setColour(juce::TextButton::buttonColourId, juce::Colour::fromRGB(229, 57, 53));
+    btnTapTempo.setColour(juce::TextButton::textColourOffId, juce::Colour::fromRGB(255, 255, 255));
     addAndMakeVisible(btnTransDown);
     addAndMakeVisible(btnTransUp);
     btnTransDown.onClick = [this]() {
@@ -837,7 +841,8 @@ NordPianoPrototypeAudioProcessorEditor::NordPianoPrototypeAudioProcessorEditor(N
     // Bottom: 88-Key Interactive Piano Keyboard
     //==========================================================================
     pianoKeyboard = std::make_unique<InteractivePianoKeyboard>(processor);
-    addAndMakeVisible(*pianoKeyboard);
+    // Piano keyboard removed - hardware console mode
+    if (pianoKeyboard != nullptr) pianoKeyboard->setVisible(false);
 
     // Initial Window Bounds (1024 x 736)
     setSize(1024, 736);
@@ -1245,10 +1250,10 @@ void NordPianoPrototypeAudioProcessorEditor::paint(juce::Graphics& g) {
     g.fillAll(juce::Colour::fromRGB(8, 10, 13));
 
     //==========================================================================
-    // 2. TOP BAR (x: 16, y: 10, w: 992, h: 44)
+    // 2. TOP BAR (x: 16, y: 12, w: 992, h: 42)
     //==========================================================================
     // Left: OmniStage Logo with Red Waveform Circle Icon
-    const float logoX = 22.0f;
+    const float logoX = 26.0f;
     const float logoY = 16.0f;
     g.setColour(juce::Colour::fromRGB(229, 57, 53)); // Neon Red
     g.drawEllipse(logoX, logoY, 32.0f, 32.0f, 1.8f);
@@ -1266,149 +1271,48 @@ void NordPianoPrototypeAudioProcessorEditor::paint(juce::Graphics& g) {
     g.setColour(juce::Colour::fromRGB(229, 57, 53)); // Neon Red
     g.drawText("Stage", logoX + 92.0f, logoY + 4.0f, 64.0f, 24.0f, juce::Justification::left);
 
-    // Center Stage Capsule: Current Song Header (x: 250, y: 8, w: 480, h: 46)
-    juce::Rectangle<float> songCapsule(250.0f, 8.0f, 480.0f, 46.0f);
+    // Center Stage Capsule: Multi-Preset Browser (x: 340, y: 12, w: 320, h: 38)
+    juce::Rectangle<float> presetCapsule(340.0f, 12.0f, 320.0f, 38.0f);
     g.setColour(juce::Colour::fromRGB(14, 18, 25));
-    g.fillRoundedRectangle(songCapsule, 6.0f);
+    g.fillRoundedRectangle(presetCapsule, 5.0f);
     g.setColour(juce::Colour::fromRGB(38, 46, 60));
-    g.drawRoundedRectangle(songCapsule, 6.0f, 1.2f);
+    g.drawRoundedRectangle(presetCapsule, 5.0f, 1.0f);
 
-    const auto& curSong = setlistQueue[size_t(juce::jlimit(0, (int)setlistQueue.size() - 1, currentSongIndex))];
-    const auto& nextSong = setlistQueue[size_t(juce::jlimit(0, (int)setlistQueue.size() - 1, (currentSongIndex + 1) % (int)setlistQueue.size()))];
-
-    // Current Song Title
-    g.setFont(juce::Font(juce::FontOptions(16.5f, juce::Font::bold)));
+    g.setFont(juce::Font(juce::FontOptions(13.5f, juce::Font::bold)));
     g.setColour(juce::Colour::fromRGB(245, 248, 255));
-    g.drawText(curSong.id + ": " + curSong.title, 260, 12, 460, 20, juce::Justification::centred);
+    g.drawText("01: Royal Worship Grand", 375, 12, 250, 38, juce::Justification::centred);
 
-    // Subline: Key | BPM | TimeSig | Next Song
-    g.setFont(juce::Font(juce::FontOptions(10.0f, juce::Font::bold)));
-    g.setColour(juce::Colour::fromRGB(130, 145, 168));
-    g.drawText("Key: " + curSong.key + "   |   BPM: " + juce::String(curSong.bpm) + "   |   " + curSong.timeSig + "   |   Next: " + nextSong.title,
-               260, 32, 460, 16, juce::Justification::centred);
-
-    // Top Bar Right: Quick Transpose
-    g.setFont(juce::Font(juce::FontOptions(8.5f, juce::Font::bold)));
+    // Top Bar Right: Master Tune & Delay BPM
+    // Master Tune (440Hz)
+    g.setFont(juce::Font(juce::FontOptions(8.5f, juce::Font::plain)));
     g.setColour(juce::Colour::fromRGB(140, 152, 170));
-    g.drawText("Quick Transpose", 750, 10, 96, 12, juce::Justification::centred);
+    g.drawText("Master Tune", 710, 14, 70, 12, juce::Justification::centred);
+    g.setFont(juce::Font(juce::FontOptions(10.5f, juce::Font::bold)));
+    g.setColour(juce::Colour::fromRGB(220, 230, 245));
+    g.drawText("440Hz", 710, 28, 70, 14, juce::Justification::centred);
 
-    // Transpose Value Box (x: 778, y: 24, w: 40, h: 24)
-    g.setColour(juce::Colour::fromRGB(16, 20, 28));
-    g.fillRoundedRectangle(778.0f, 24.0f, 40.0f, 24.0f, 3.0f);
-    g.setColour(juce::Colour::fromRGB(45, 52, 65));
-    g.drawRoundedRectangle(778.0f, 24.0f, 40.0f, 24.0f, 3.0f, 1.0f);
-    g.setFont(juce::Font(juce::FontOptions(12.0f, juce::Font::bold)));
-    g.setColour(juce::Colour::fromRGB(245, 250, 255));
-    g.drawText(curSong.key, 778, 24, 40, 24, juce::Justification::centred);
-
-    // Master Tune
-    g.setFont(juce::Font(juce::FontOptions(8.5f, juce::Font::bold)));
-    g.setColour(juce::Colour::fromRGB(140, 152, 170));
-    g.drawText("Master Tune", 870, 10, 80, 12, juce::Justification::centred);
-
-    // Tune Value Box
-    g.setColour(juce::Colour::fromRGB(16, 20, 28));
-    g.fillRoundedRectangle(870.0f, 24.0f, 80.0f, 24.0f, 3.0f);
-    g.setColour(juce::Colour::fromRGB(45, 52, 65));
-    g.drawRoundedRectangle(870.0f, 24.0f, 80.0f, 24.0f, 3.0f, 1.0f);
-    g.setFont(juce::Font(juce::FontOptions(11.5f, juce::Font::bold)));
+    // Delay BPM Box
+    juce::Rectangle<float> bpmBox(800.0f, 16.0f, 84.0f, 30.0f);
+    g.setColour(juce::Colour::fromRGB(14, 18, 25));
+    g.fillRoundedRectangle(bpmBox, 4.0f);
+    g.setColour(juce::Colour::fromRGB(45, 54, 70));
+    g.drawRoundedRectangle(bpmBox, 4.0f, 1.0f);
+    g.setFont(juce::Font(juce::FontOptions(11.0f, juce::Font::bold)));
     g.setColour(juce::Colour::fromRGB(240, 245, 255));
-    g.drawText("0.00", 870, 24, 80, 24, juce::Justification::centred);
+    g.drawText("BPM: 72", bpmBox, juce::Justification::centred);
 
     //==========================================================================
-    // 3. UPPER MAIN SECTION (Live Setlist Queue & 4-Channel Live Stage Mixer)
+    // 3. UPPER CONSOLE DECK (Mixer, OLED Screen & Programs, Master)
     //==========================================================================
-    // Card 1: Live Setlist Queue (x: 16, y: 62, w: 310, h: 368)
-    drawPanelCard(g, {16, 62, 310, 368}, "Live Setlist Queue", false);
+    // Panel 1: 4-Channel Live Stage Mixer (x: 16, y: 62, w: 390, h: 282)
+    drawPanelCard(g, {16, 62, 390, 282}, "");
     drawAllenScrew(g, 26.0f, 72.0f);
-    drawAllenScrew(g, 316.0f, 72.0f);
-    drawAllenScrew(g, 26.0f, 420.0f);
-    drawAllenScrew(g, 316.0f, 420.0f);
+    drawAllenScrew(g, 396.0f, 72.0f);
+    drawAllenScrew(g, 26.0f, 334.0f);
+    drawAllenScrew(g, 396.0f, 334.0f);
 
-    // Draw Setlist Queue Items
-    for (size_t s = 0; s < setlistQueue.size(); ++s) {
-        const float sy = 94.0f + float(s) * 64.0f;
-        const bool isPlaying = ((int)s == currentSongIndex);
-
-        juce::Rectangle<float> rowRect(26.0f, sy, 290.0f, 54.0f);
-        if (isPlaying) {
-            // Active Playing Card with Green Glow
-            g.setColour(juce::Colour::fromRGB(18, 48, 28));
-            g.fillRoundedRectangle(rowRect, 5.0f);
-            g.setColour(juce::Colour::fromRGB(46, 204, 113)); // Vibrant Green Neon Border
-            g.drawRoundedRectangle(rowRect, 5.0f, 1.4f);
-
-            // Play Icon
-            juce::Path playArrow;
-            playArrow.startNewSubPath(38.0f, sy + 21.0f);
-            playArrow.lineTo(38.0f, sy + 33.0f);
-            playArrow.lineTo(47.0f, sy + 27.0f);
-            playArrow.closeSubPath();
-            g.setColour(juce::Colour::fromRGB(46, 204, 113));
-            g.fillPath(playArrow);
-
-            // Number & Title
-            g.setFont(juce::Font(juce::FontOptions(14.0f, juce::Font::bold)));
-            g.setColour(juce::Colour::fromRGB(46, 204, 113));
-            g.drawText(setlistQueue[s].id, 52, int(sy + 12), 24, 18, juce::Justification::left);
-
-            g.setColour(juce::Colour::fromRGB(255, 255, 255));
-            g.drawText(setlistQueue[s].title, 78, int(sy + 12), 150, 18, juce::Justification::left);
-
-            // Subline: Key & BPM
-            g.setFont(juce::Font(juce::FontOptions(9.5f, juce::Font::bold)));
-            g.setColour(juce::Colour::fromRGB(140, 180, 150));
-            g.drawText(setlistQueue[s].key + "  |  " + juce::String(setlistQueue[s].bpm) + " BPM  |  " + setlistQueue[s].timeSig,
-                       78, int(sy + 31), 150, 14, juce::Justification::left);
-
-            // Playing Pill Badge
-            juce::Rectangle<float> badge(234.0f, sy + 18.0f, 68.0f, 18.0f);
-            g.setColour(juce::Colour::fromRGB(14, 60, 32));
-            g.fillRoundedRectangle(badge, 9.0f);
-            g.setColour(juce::Colour::fromRGB(46, 204, 113));
-            g.drawRoundedRectangle(badge, 9.0f, 1.0f);
-            g.setFont(juce::Font(juce::FontOptions(8.5f, juce::Font::bold)));
-            g.drawText("Playing", badge, juce::Justification::centred);
-        } else {
-            // Inactive Song Row
-            g.setColour(juce::Colour::fromRGB(14, 17, 24));
-            g.fillRoundedRectangle(rowRect, 5.0f);
-            g.setColour(juce::Colour::fromRGB(32, 38, 50));
-            g.drawRoundedRectangle(rowRect, 5.0f, 1.0f);
-
-            // Number & Title
-            g.setFont(juce::Font(juce::FontOptions(13.0f, juce::Font::bold)));
-            g.setColour(juce::Colour::fromRGB(110, 122, 140));
-            g.drawText(setlistQueue[s].id, 38, int(sy + 12), 24, 18, juce::Justification::left);
-
-            g.setColour(juce::Colour::fromRGB(205, 215, 230));
-            g.drawText(setlistQueue[s].title, 64, int(sy + 12), 160, 18, juce::Justification::left);
-
-            // Subline: Key & BPM
-            g.setFont(juce::Font(juce::FontOptions(9.5f, juce::Font::plain)));
-            g.setColour(juce::Colour::fromRGB(110, 122, 140));
-            g.drawText(setlistQueue[s].key + "  |  " + juce::String(setlistQueue[s].bpm) + " BPM  |  " + setlistQueue[s].timeSig,
-                       64, int(sy + 31), 160, 14, juce::Justification::left);
-
-            // Drag Handle Icon (3 horizontal bars)
-            const float dhX = 282.0f;
-            const float dhY = sy + 21.0f;
-            g.setColour(juce::Colour::fromRGB(65, 75, 92));
-            g.fillRect(dhX, dhY, 18.0f, 2.0f);
-            g.fillRect(dhX, dhY + 5.0f, 18.0f, 2.0f);
-            g.fillRect(dhX, dhY + 10.0f, 18.0f, 2.0f);
-        }
-    }
-
-    // Card 2: 4-Channel Live Stage Mixer (x: 338, y: 62, w: 670, h: 368)
-    drawPanelCard(g, {338, 62, 670, 368}, "4-Channel Live Stage Mixer", false);
-    drawAllenScrew(g, 348.0f, 72.0f);
-    drawAllenScrew(g, 998.0f, 72.0f);
-    drawAllenScrew(g, 348.0f, 420.0f);
-    drawAllenScrew(g, 998.0f, 420.0f);
-
-    const std::array<juce::String, 4> chTitles = {"Channel A", "Channel B", "Channel C", "Channel D"};
-    const std::array<juce::String, 4> chSubtitles = {"Piano", "Worship Pad", "Lead", "Organ"};
+    const std::array<juce::String, 4> chTitles = {"Channel 1", "Channel 2", "Channel 3", "Channel 4"};
+    const std::array<juce::String, 4> chSubtitles = {"Piano", "Pad", "Synth", "Organ"};
     const std::array<juce::Colour, 4> chColors = {
         juce::Colour::fromRGB(229, 57, 53),  // Red
         juce::Colour::fromRGB(0, 220, 240),  // Cyan
@@ -1417,165 +1321,305 @@ void NordPianoPrototypeAudioProcessorEditor::paint(juce::Graphics& g) {
     };
 
     for (int ch = 0; ch < 4; ++ch) {
-        const int cx = 352 + ch * 162;
+        const int cx = 28 + ch * 92;
 
-        // Channel Header Pill (w: 152, h: 44)
-        juce::Rectangle<float> hdrRect(float(cx), 92.0f, 152.0f, 44.0f);
-        g.setColour(chColors[size_t(ch)].withAlpha(0.20f));
-        g.fillRoundedRectangle(hdrRect, 4.0f);
+        // Channel Header (w: 84, h: 36)
+        g.setFont(juce::Font(juce::FontOptions(9.5f, juce::Font::bold)));
+        g.setColour(juce::Colour::fromRGB(150, 160, 175));
+        g.drawText(chTitles[size_t(ch)], cx, 74, 84, 12, juce::Justification::centred);
+
+        g.setFont(juce::Font(juce::FontOptions(12.0f, juce::Font::bold)));
         g.setColour(chColors[size_t(ch)]);
-        g.drawRoundedRectangle(hdrRect, 4.0f, 1.4f);
-
-        // Header Title
-        g.setFont(juce::Font(juce::FontOptions(11.0f, juce::Font::bold)));
-        g.setColour(chColors[size_t(ch)]);
-        g.drawText(chTitles[size_t(ch)], cx, 96, 152, 16, juce::Justification::centred);
-
-        // Header Subtitle (Engine name)
-        g.setFont(juce::Font(juce::FontOptions(13.0f, juce::Font::bold)));
-        g.setColour(juce::Colour::fromRGB(250, 252, 255));
-        g.drawText(chSubtitles[size_t(ch)], cx, 114, 152, 18, juce::Justification::centred);
+        g.drawText(chSubtitles[size_t(ch)], cx, 88, 84, 16, juce::Justification::centred);
 
         // Vertical Brushed Aluminum Fader Plate
-        juce::Rectangle<float> faderPlate(float(cx + 6), 146.0f, 54.0f, 220.0f);
-        juce::ColourGradient plateGrad(juce::Colour::fromRGB(36, 42, 52), faderPlate.getX(), faderPlate.getY(),
-                                       juce::Colour::fromRGB(18, 22, 28), faderPlate.getX(), faderPlate.getBottom(), false);
+        juce::Rectangle<float> faderPlate(float(cx + 4), 112.0f, 40.0f, 154.0f);
+        juce::ColourGradient plateGrad(juce::Colour::fromRGB(32, 38, 48), faderPlate.getX(), faderPlate.getY(),
+                                       juce::Colour::fromRGB(16, 20, 26), faderPlate.getX(), faderPlate.getBottom(), false);
         g.setGradientFill(plateGrad);
-        g.fillRoundedRectangle(faderPlate, 4.0f);
-        g.setColour(juce::Colour::fromRGB(50, 58, 72));
-        g.drawRoundedRectangle(faderPlate, 4.0f, 1.0f);
+        g.fillRoundedRectangle(faderPlate, 3.0f);
+        g.setColour(juce::Colour::fromRGB(46, 54, 68));
+        g.drawRoundedRectangle(faderPlate, 3.0f, 1.0f);
 
         // Vertical LED Ladder Peak Meter next to fader plate
-        const float meterX = float(cx + 70);
-        const float meterY = 148.0f;
-        const float meterH = 144.0f;
+        const float meterX = float(cx + 50);
+        const float meterY = 114.0f;
+        const float meterH = 150.0f;
         const int numSegments = 24;
         for (int s = 0; s < numSegments; ++s) {
-            const float sy = meterY + meterH - (s + 1) * 6.0f;
+            const float sy = meterY + meterH - (s + 1) * 6.2f;
             juce::Colour segCol = (s < 16) ? juce::Colour::fromRGB(45, 215, 45) : (s < 20 ? juce::Colour::fromRGB(245, 205, 30) : juce::Colour::fromRGB(235, 45, 45));
-            const bool lit = (s < (ch == 0 ? 17 : (ch == 1 ? 12 : (ch == 2 ? 0 : 0))));
+            const bool lit = (s < (ch == 0 ? 17 : (ch == 1 ? 12 : 0)));
             g.setColour(lit ? segCol : segCol.withAlpha(0.15f));
-            g.fillRect(meterX, sy, 8.0f, 4.8f);
+            g.fillRect(meterX, sy, 7.0f, 5.0f);
         }
 
-        // dB Tick marks beside meter
-        g.setFont(juce::Font(juce::FontOptions(7.5f, juce::Font::plain)));
-        g.setColour(juce::Colour::fromRGB(95, 105, 120));
-        g.drawText("0", int(meterX + 11), int(meterY - 2), 14, 8, juce::Justification::left);
-        g.drawText("-10", int(meterX + 11), int(meterY + 44), 16, 8, juce::Justification::left);
-        g.drawText("-20", int(meterX + 11), int(meterY + 84), 16, 8, juce::Justification::left);
-        g.drawText("-40", int(meterX + 11), int(meterY + 134), 16, 8, juce::Justification::left);
-
-        // Bottom Channel Badge Letter
-        juce::Rectangle<float> badgeRect(float(cx + 6), 374.0f, 54.0f, 36.0f);
-        g.setColour(chColors[size_t(ch)].withAlpha(0.18f));
-        g.fillRoundedRectangle(badgeRect, 4.0f);
-        g.setColour(chColors[size_t(ch)]);
-        g.drawRoundedRectangle(badgeRect, 4.0f, 1.2f);
-        g.setFont(juce::Font(juce::FontOptions(16.0f, juce::Font::bold)));
-        g.setColour(chColors[size_t(ch)]);
-        g.drawText(chTitles[size_t(ch)].substring(8), badgeRect, juce::Justification::centred);
+        // Channel ON Button (drawn button background)
+        juce::Rectangle<float> onRect(float(cx + 8), 282.0f, 32.0f, 22.0f);
+        g.setColour(ch == 0 ? juce::Colour::fromRGB(229, 57, 53) : juce::Colour::fromRGB(24, 28, 36));
+        g.fillRoundedRectangle(onRect, 3.0f);
+        g.setColour(ch == 0 ? juce::Colour::fromRGB(255, 80, 75) : juce::Colour::fromRGB(45, 52, 65));
+        g.drawRoundedRectangle(onRect, 3.0f, 1.0f);
+        g.setFont(juce::Font(juce::FontOptions(8.5f, juce::Font::bold)));
+        g.setColour(ch == 0 ? juce::Colour::fromRGB(255, 255, 255) : juce::Colour::fromRGB(130, 140, 155));
+        g.drawText("ON", onRect, juce::Justification::centred);
     }
 
-    //==========================================================================
-    // 4. PERFORMANCE PADS (SONG PARTS) ROW (y: 442 to 496, h: 54)
-    //==========================================================================
-    // Spanning width from x: 16 to 1008 (total width: 992 px)
-    // 8 Wide Pads: 118 px each, gap 7 px
-    for (int p = 0; p < 8; ++p) {
-        const float px = 16.0f + float(p) * 125.0f;
-        const bool isActive = (p == activeSongPart);
+    // Panel 2: Central OLED Display & Programs (x: 418, y: 62, w: 400, h: 282)
+    drawPanelCard(g, {418, 62, 400, 282}, "");
+    drawAllenScrew(g, 428.0f, 72.0f);
+    drawAllenScrew(g, 808.0f, 72.0f);
+    drawAllenScrew(g, 428.0f, 334.0f);
+    drawAllenScrew(g, 808.0f, 334.0f);
 
-        juce::Rectangle<float> padRect(px, 442.0f, 117.0f, 52.0f);
-        if (isActive) {
-            // Active Performance Pad (Cyan Neon Border & Glow)
-            g.setColour(juce::Colour::fromRGB(12, 36, 48));
-            g.fillRoundedRectangle(padRect, 5.0f);
-            g.setColour(juce::Colour::fromRGB(0, 220, 240));
-            g.drawRoundedRectangle(padRect, 5.0f, 1.6f);
-        } else if (p == 0) {
-            // Intro Pad (White Outline)
-            g.setColour(juce::Colour::fromRGB(16, 20, 28));
-            g.fillRoundedRectangle(padRect, 5.0f);
-            g.setColour(juce::Colour::fromRGB(200, 210, 225));
-            g.drawRoundedRectangle(padRect, 5.0f, 1.2f);
-        } else {
-            // Standard Stealth Performance Pad
-            g.setColour(juce::Colour::fromRGB(16, 20, 28));
-            g.fillRoundedRectangle(padRect, 5.0f);
-            g.setColour(juce::Colour::fromRGB(38, 46, 60));
-            g.drawRoundedRectangle(padRect, 5.0f, 1.0f);
-        }
+    // OLED Screen Glass (x: 426, y: 72, w: 384, h: 168)
+    juce::Rectangle<float> oledRect(426.0f, 72.0f, 384.0f, 168.0f);
+    juce::ColourGradient oledGrad(juce::Colour::fromRGB(6, 10, 15), oledRect.getX(), oledRect.getY(),
+                                  juce::Colour::fromRGB(2, 4, 7), oledRect.getX(), oledRect.getBottom(), false);
+    g.setGradientFill(oledGrad);
+    g.fillRoundedRectangle(oledRect, 6.0f);
+    g.setColour(juce::Colour::fromRGB(0, 215, 255).withAlpha(0.7f)); // Bright Cyan neon glow frame
+    g.drawRoundedRectangle(oledRect, 6.0f, 1.2f);
+
+    // OLED Preset Title
+    g.setFont(juce::Font(juce::FontOptions(14.0f, juce::Font::bold)));
+    g.setColour(juce::Colour::fromRGB(0, 230, 255));
+    g.drawText("01: Royal Worship Grand", 440, 78, 250, 18, juce::Justification::left);
+
+    // Thin cyan divider line
+    g.setColour(juce::Colour::fromRGB(0, 180, 220).withAlpha(0.35f));
+    g.drawHorizontalLine(98, 440.0f, 620.0f);
+
+    // OLED Layer Icons & Mix Bars
+    g.setFont(juce::Font(juce::FontOptions(9.5f, juce::Font::bold)));
+    g.setColour(juce::Colour::fromRGB(0, 215, 240));
+    g.drawText("Sound Layer", 440, 134, 80, 12, juce::Justification::left);
+    g.fillRect(440.0f, 150.0f, 59.0f, 6.0f);
+    g.drawText("59%", 504, 146, 30, 12, juce::Justification::left);
+
+    g.drawText("Sound Layer Mix", 440, 168, 90, 12, juce::Justification::left);
+    g.fillRect(440.0f, 184.0f, 57.0f, 6.0f);
+    g.drawText("57%", 504, 180, 30, 12, juce::Justification::left);
+
+    // Photorealistic 3D Grand Piano Graphic on the right side of OLED
+    if (imgOledGrandPiano.isValid()) {
+        g.drawImageWithin(imgOledGrandPiano, 610, 78, 194, 148,
+                          juce::RectanglePlacement::centred | juce::RectanglePlacement::onlyReduceInSize);
     }
 
-    //==========================================================================
-    // 5. BOTTOM SECTION: VISUAL SPLIT KEYBED & MASTER STAGE CONTROLS
-    //==========================================================================
-    drawPanelCard(g, {16, 508, 992, 246}, "Visual Split Keybed", false);
-    drawAllenScrew(g, 26.0f, 518.0f);
-    drawAllenScrew(g, 998.0f, 518.0f);
-    drawAllenScrew(g, 26.0f, 744.0f);
-    drawAllenScrew(g, 998.0f, 744.0f);
+    // Below OLED Screen: Red LED Dot + PROGRAMS Label (y: 250)
+    g.setColour(juce::Colour::fromRGB(229, 57, 53));
+    g.fillEllipse(436.0f, 253.0f, 6.0f, 6.0f); // LED Dot
+    g.setFont(juce::Font(juce::FontOptions(9.5f, juce::Font::bold)));
+    g.setColour(juce::Colour::fromRGB(220, 225, 235));
+    g.drawText("PROGRAMS", 448, 249, 80, 14, juce::Justification::left);
 
-    // Keyboard Zone Strip above keys (x: 28, y: 532, w: 760, h: 22)
-    // Red Zone: Layer A Piano (x: 28 to 330)
-    juce::Rectangle<float> zoneA(28.0f, 532.0f, 302.0f, 22.0f);
-    g.setColour(juce::Colour::fromRGB(229, 57, 53)); // Vivid Red
-    g.fillRoundedRectangle(zoneA, 3.0f);
-    g.setFont(juce::Font(juce::FontOptions(10.0f, juce::Font::bold)));
-    g.setColour(juce::Colour::fromRGB(255, 255, 255));
-    g.drawText("Layer A", zoneA, juce::Justification::centred);
+    // Panel 3: Master Output Section (x: 830, y: 62, w: 178, h: 282)
+    drawPanelCard(g, {830, 62, 178, 282}, "MASTER", false);
+    drawAllenScrew(g, 840.0f, 72.0f);
+    drawAllenScrew(g, 998.0f, 72.0f);
+    drawAllenScrew(g, 840.0f, 334.0f);
+    drawAllenScrew(g, 998.0f, 334.0f);
 
-    // Cyan Zone: Layer B Worship Pad (x: 334 to 788)
-    juce::Rectangle<float> zoneB(334.0f, 532.0f, 454.0f, 22.0f);
-    g.setColour(juce::Colour::fromRGB(0, 215, 235)); // Vivid Cyan
-    g.fillRoundedRectangle(zoneB, 3.0f);
-    g.setColour(juce::Colour::fromRGB(10, 20, 25));
-    g.drawText("Layer B", zoneB, juce::Justification::centred);
-
-    // Draggable Split Point C3 Indicator Badge (x: 300, y: 530, w: 90, h: 24)
-    juce::Rectangle<float> splitPill(298.0f, 531.0f, 92.0f, 24.0f);
-    g.setColour(juce::Colour::fromRGB(12, 16, 22));
-    g.fillRoundedRectangle(splitPill, 4.0f);
-    g.setColour(juce::Colour::fromRGB(0, 230, 255));
-    g.drawRoundedRectangle(splitPill, 4.0f, 1.4f);
-    g.setFont(juce::Font(juce::FontOptions(8.5f, juce::Font::bold)));
-    g.setColour(juce::Colour::fromRGB(0, 230, 255));
-    g.drawText("SPLIT POINT C3", splitPill, juce::Justification::centred);
-
-    // Master Stage Knobs Labels (Right side)
-    g.setFont(juce::Font(juce::FontOptions(9.0f, juce::Font::bold)));
-    g.setColour(juce::Colour::fromRGB(175, 185, 200));
-    g.drawText("Master Tone", 804, 584, 80, 12, juce::Justification::centred);
-    g.drawText("Stage Reverb", 804, 656, 80, 12, juce::Justification::centred);
-    g.drawText("Master Volume", 790, 728, 92, 12, juce::Justification::centred);
-
-    // Dual Stereo Peak VU Meters (x: 908, y: 536, w: 36, h: 182)
-    const float dMeterX = 908.0f;
-    const float dMeterY = 538.0f;
-    const float dMeterH = 176.0f;
-    const int numDualSegs = 24;
-    for (int ms = 0; ms < numDualSegs; ++ms) {
-        const float my = dMeterY + dMeterH - (ms + 1) * 7.3f;
+    // Dual 24-Segment Stereo Peak Meters (L and R)
+    const float masterMeterX = 924.0f;
+    const float masterMeterY = 112.0f;
+    const float masterMeterH = 170.0f;
+    const int numMasterSegs = 24;
+    for (int ms = 0; ms < numMasterSegs; ++ms) {
+        const float my = masterMeterY + masterMeterH - (ms + 1) * 7.0f;
         juce::Colour mCol = (ms < 16) ? juce::Colour::fromRGB(50, 215, 50) : (ms < 20 ? juce::Colour::fromRGB(245, 205, 30) : juce::Colour::fromRGB(235, 45, 45));
         const bool mLit = (ms < 17);
         g.setColour(mLit ? mCol : mCol.withAlpha(0.15f));
-        g.fillRect(dMeterX, my, 8.0f, 5.8f);         // Left
-        g.fillRect(dMeterX + 11.0f, my, 8.0f, 5.8f); // Right
+        g.fillRect(masterMeterX, my, 8.0f, 5.5f);         // Left
+        g.fillRect(masterMeterX + 11.0f, my, 8.0f, 5.5f); // Right
     }
 
-    // Meter scale numbers
+    // Master Meter Scale Numbers
     g.setFont(juce::Font(juce::FontOptions(7.5f, juce::Font::plain)));
-    g.setColour(juce::Colour::fromRGB(120, 130, 145));
-    g.drawText("0", int(dMeterX + 23), int(dMeterY - 2), 14, 8, juce::Justification::left);
-    g.drawText("-5", int(dMeterX + 23), int(dMeterY + 38), 16, 8, juce::Justification::left);
-    g.drawText("-10", int(dMeterX + 23), int(dMeterY + 76), 16, 8, juce::Justification::left);
-    g.drawText("-20", int(dMeterX + 23), int(dMeterY + 116), 16, 8, juce::Justification::left);
-    g.drawText("-40", int(dMeterX + 23), int(dMeterY + 164), 16, 8, juce::Justification::left);
+    g.setColour(juce::Colour::fromRGB(130, 140, 155));
+    g.drawText("0", int(masterMeterX + 23), int(masterMeterY - 2), 14, 8, juce::Justification::left);
+    g.drawText("-4", int(masterMeterX + 23), int(masterMeterY + 32), 14, 8, juce::Justification::left);
+    g.drawText("-8", int(masterMeterX + 23), int(masterMeterY + 60), 14, 8, juce::Justification::left);
+    g.drawText("-16", int(masterMeterX + 23), int(masterMeterY + 98), 16, 8, juce::Justification::left);
+    g.drawText("-26", int(masterMeterX + 23), int(masterMeterY + 130), 16, 8, juce::Justification::left);
+    g.drawText("-40", int(masterMeterX + 23), int(masterMeterY + 160), 16, 8, juce::Justification::left);
+    g.setFont(juce::Font(juce::FontOptions(8.5f, juce::Font::bold)));
+    g.drawText("24 VU", int(masterMeterX - 8), int(masterMeterY + masterMeterH + 4), 54, 12, juce::Justification::centred);
 
-    g.setFont(juce::Font(juce::FontOptions(8.0f, juce::Font::bold)));
-    g.setColour(juce::Colour::fromRGB(140, 150, 165));
-    g.drawText("Dual   Peak", int(dMeterX - 8), int(dMeterY + dMeterH + 4), 54, 12, juce::Justification::centred);
+    //==========================================================================
+    // 4. NAVIGATION TABS ROW (y: 354, h: 36)
+    //==========================================================================
+    // 5 Large Engine Tabs: A Piano, B Worship Pad, C Synth Lead, D Organ B3, Master FX
+    const std::array<juce::String, 5> tabLabels = {"A  PIANO", "B  WORSHIP PAD", "C  SYNTH LEAD", "D  ORGAN B3", "MASTER FX"};
+    for (int t = 0; t < 5; ++t) {
+        const float tx = 16.0f + float(t) * 200.0f;
+        const bool isActive = (t == activeTab);
+
+        juce::Rectangle<float> tabRect(tx, 354.0f, 192.0f, 34.0f);
+        if (isActive) {
+            g.setColour(juce::Colour::fromRGB(22, 26, 34));
+            g.fillRoundedRectangle(tabRect, 4.0f);
+            // Glowing Red bottom border underline
+            g.setColour(juce::Colour::fromRGB(229, 57, 53));
+            g.fillRect(tx + 8.0f, 385.0f, 176.0f, 3.0f);
+            g.drawRoundedRectangle(tabRect, 4.0f, 1.2f);
+        } else {
+            g.setColour(juce::Colour::fromRGB(14, 17, 24));
+            g.fillRoundedRectangle(tabRect, 4.0f);
+            g.setColour(juce::Colour::fromRGB(34, 40, 52));
+            g.drawRoundedRectangle(tabRect, 4.0f, 1.0f);
+        }
+
+        g.setFont(juce::Font(juce::FontOptions(11.5f, juce::Font::bold)));
+        if (t == 0) g.setColour(isActive ? juce::Colour::fromRGB(255, 255, 255) : juce::Colour::fromRGB(229, 57, 53));
+        else if (t == 1) g.setColour(juce::Colour::fromRGB(0, 220, 240));
+        else if (t == 2) g.setColour(juce::Colour::fromRGB(50, 130, 255));
+        else if (t == 3) g.setColour(juce::Colour::fromRGB(255, 160, 30));
+        else g.setColour(juce::Colour::fromRGB(180, 190, 205));
+        g.drawText(tabLabels[size_t(t)], tabRect, juce::Justification::centred);
+    }
+
+    //==========================================================================
+    // 5. LOWER CONSOLE DECK (DEDICATED SOUND SCULPTING & FX RACK)
+    //==========================================================================
+    // Main Lower Card (x: 16, y: 398, w: 992, h: 356)
+    drawPanelCard(g, {16, 398, 992, 356}, "");
+    drawAllenScrew(g, 26.0f, 408.0f);
+    drawAllenScrew(g, 998.0f, 408.0f);
+    drawAllenScrew(g, 26.0f, 744.0f);
+    drawAllenScrew(g, 998.0f, 744.0f);
+
+    // Section 1: CATEGORY (x: 28 to 178, w: 150)
+    g.setFont(juce::Font(juce::FontOptions(9.5f, juce::Font::bold)));
+    g.setColour(juce::Colour::fromRGB(150, 160, 175));
+    g.drawText("CATEGORY", 28, 412, 150, 14, juce::Justification::centred);
+
+    // Divider Line 1
+    g.setColour(juce::Colour::fromRGB(32, 38, 50));
+    g.drawVerticalLine(190, 414.0f, 738.0f);
+
+    // Section 2: ACOUSTIC CHARACTER (x: 202 to 360, w: 158)
+    g.setFont(juce::Font(juce::FontOptions(9.5f, juce::Font::bold)));
+    g.setColour(juce::Colour::fromRGB(150, 160, 175));
+    g.drawText("ACOUSTIC CHARACTER", 202, 412, 158, 14, juce::Justification::left);
+
+    // Character Labels
+    g.setFont(juce::Font(juce::FontOptions(10.0f, juce::Font::bold)));
+    g.setColour(juce::Colour::fromRGB(220, 230, 245));
+    g.drawText("Pedal Noise", 260, 444, 100, 18, juce::Justification::left);
+    g.drawText("String Res", 260, 508, 100, 18, juce::Justification::left);
+    g.drawText("Damper Res", 260, 572, 100, 18, juce::Justification::left);
+    g.drawText("Soft Release", 260, 636, 100, 18, juce::Justification::left);
+
+    // Draw Rocker Switches
+    auto drawRocker = [&](float rx, float ry, bool on, juce::Colour activeCol) {
+        juce::Rectangle<float> slot(rx, ry, 36.0f, 20.0f);
+        g.setColour(juce::Colour::fromRGB(14, 17, 24));
+        g.fillRoundedRectangle(slot, 10.0f);
+        g.setColour(juce::Colour::fromRGB(45, 54, 70));
+        g.drawRoundedRectangle(slot, 10.0f, 1.0f);
+        if (on) {
+            g.setColour(activeCol);
+            g.fillEllipse(rx + 18.0f, ry + 3.0f, 14.0f, 14.0f);
+            g.setColour(juce::Colour::fromRGB(255, 255, 255));
+            g.fillEllipse(rx + 23.0f, ry + 7.0f, 4.0f, 4.0f);
+        } else {
+            g.setColour(juce::Colour::fromRGB(70, 80, 96));
+            g.fillEllipse(rx + 4.0f, ry + 3.0f, 14.0f, 14.0f);
+        }
+    };
+    drawRocker(214.0f, 444.0f, true, juce::Colour::fromRGB(229, 57, 53));
+    drawRocker(214.0f, 508.0f, true, juce::Colour::fromRGB(245, 160, 30));
+    drawRocker(214.0f, 572.0f, true, juce::Colour::fromRGB(245, 160, 30));
+    drawRocker(214.0f, 636.0f, false, juce::Colour::fromRGB(70, 80, 96));
+
+    // Divider Line 2
+    g.drawVerticalLine(374, 414.0f, 738.0f);
+
+    // Section 3: TONE & FILTER (x: 386 to 516, w: 130)
+    g.setFont(juce::Font(juce::FontOptions(9.5f, juce::Font::bold)));
+    g.setColour(juce::Colour::fromRGB(150, 160, 175));
+    g.drawText("TONE & FILTER", 386, 412, 130, 14, juce::Justification::centred);
+
+    // Tone Labels
+    g.setFont(juce::Font(juce::FontOptions(9.0f, juce::Font::bold)));
+    g.setColour(juce::Colour::fromRGB(180, 190, 205));
+    g.drawText("Cutoff", 420, 506, 60, 12, juce::Justification::centred);
+    g.drawText("Reso", 474, 600, 60, 12, juce::Justification::centred);
+    g.drawText("Env", 420, 694, 60, 12, juce::Justification::centred);
+
+    // Divider Line 3
+    g.drawVerticalLine(530, 414.0f, 738.0f);
+
+    // Section 4: AMP ENVELOPE (x: 542 to 642, w: 100)
+    g.setFont(juce::Font(juce::FontOptions(9.5f, juce::Font::bold)));
+    g.setColour(juce::Colour::fromRGB(150, 160, 175));
+    g.drawText("AMP ENVELOPE", 542, 412, 100, 14, juce::Justification::centred);
+
+    // Amp Labels
+    g.setFont(juce::Font(juce::FontOptions(9.0f, juce::Font::bold)));
+    g.setColour(juce::Colour::fromRGB(180, 190, 205));
+    g.drawText("Attack", 562, 506, 60, 12, juce::Justification::centred);
+    g.drawText("Decay", 562, 600, 60, 12, juce::Justification::centred);
+    g.drawText("Release", 562, 694, 60, 12, juce::Justification::centred);
+
+    // Divider Line 4
+    g.drawVerticalLine(654, 414.0f, 738.0f);
+
+    // Section 5: MASTER FX CHAIN (x: 664 to 994, w: 330)
+    g.setFont(juce::Font(juce::FontOptions(9.5f, juce::Font::bold)));
+    g.setColour(juce::Colour::fromRGB(150, 160, 175));
+    g.drawText("MASTER FX CHAIN", 664, 412, 330, 14, juce::Justification::centred);
+
+    // 4 Brushed Metal FX Faceplate Modules:
+    auto drawFxModule = [&](float mx, float my, float mw, float mh, const juce::String& title) {
+        juce::Rectangle<float> modRect(mx, my, mw, mh);
+        juce::ColourGradient modGrad(juce::Colour::fromRGB(195, 205, 220), mx, my,
+                                     juce::Colour::fromRGB(130, 140, 155), mx, my + mh, false);
+        g.setGradientFill(modGrad);
+        g.fillRoundedRectangle(modRect, 4.0f);
+        g.setColour(juce::Colour::fromRGB(240, 248, 255).withAlpha(0.6f));
+        g.drawHorizontalLine((int)my, mx + 1.0f, mx + mw - 1.0f);
+        g.setColour(juce::Colour::fromRGB(45, 52, 65));
+        g.drawRoundedRectangle(modRect, 4.0f, 1.0f);
+
+        // Header Title in Module
+        g.setFont(juce::Font(juce::FontOptions(10.0f, juce::Font::bold)));
+        g.setColour(juce::Colour::fromRGB(18, 22, 28));
+        g.drawText(title, int(mx), int(my + 4), int(mw), 14, juce::Justification::centred);
+    };
+
+    // 1. EQ Module (x: 664, y: 432, w: 154, h: 144)
+    drawFxModule(664.0f, 432.0f, 154.0f, 144.0f, "EQ");
+    g.setFont(juce::Font(juce::FontOptions(8.5f, juce::Font::bold)));
+    g.setColour(juce::Colour::fromRGB(28, 34, 44));
+    g.drawText("Low", 670, 552, 44, 12, juce::Justification::centred);
+    g.drawText("Mid", 718, 552, 44, 12, juce::Justification::centred);
+    g.drawText("High", 766, 552, 44, 12, juce::Justification::centred);
+
+    // 2. DYNAMICS Module (x: 832, y: 432, w: 154, h: 144)
+    drawFxModule(832.0f, 432.0f, 154.0f, 144.0f, "DYNAMICS");
+    g.setFont(juce::Font(juce::FontOptions(8.5f, juce::Font::bold)));
+    g.setColour(juce::Colour::fromRGB(28, 34, 44));
+    g.drawText("Comp", 846, 552, 54, 12, juce::Justification::centred);
+    g.drawText("Ratio", 916, 552, 54, 12, juce::Justification::centred);
+
+    // 3. DELAY Module (with BPM sync!) (x: 664, y: 590, w: 154, h: 144)
+    drawFxModule(664.0f, 590.0f, 154.0f, 144.0f, "DELAY");
+    g.setFont(juce::Font(juce::FontOptions(8.5f, juce::Font::bold)));
+    g.setColour(juce::Colour::fromRGB(28, 34, 44));
+    g.drawText("Sync", 670, 710, 44, 12, juce::Justification::centred);
+    g.drawText("Feedback", 714, 710, 52, 12, juce::Justification::centred);
+    g.drawText("Mix", 770, 710, 44, 12, juce::Justification::centred);
+
+    // 4. REVERB Module (x: 832, y: 590, w: 154, h: 144)
+    drawFxModule(832.0f, 590.0f, 154.0f, 144.0f, "REVERB");
+    g.setFont(juce::Font(juce::FontOptions(8.5f, juce::Font::bold)));
+    g.setColour(juce::Colour::fromRGB(28, 34, 44));
+    g.drawText("Size", 840, 710, 44, 12, juce::Justification::centred);
+    g.drawText("Tone", 886, 710, 44, 12, juce::Justification::centred);
+    g.drawText("Mix", 934, 710, 44, 12, juce::Justification::centred);
 }
 
 
@@ -1779,46 +1823,92 @@ void MidiMapOverlay::mouseDown(const juce::MouseEvent& e) {
 //==============================================================================
 void NordPianoPrototypeAudioProcessorEditor::resized() {
     // 1. Top Bar Controls
-    btnTransDown.setBounds(750, 24, 26, 24);
-    btnTransUp.setBounds(820, 24, 26, 24);
-    sliderTune.setBounds(870, 24, 80, 24);
+    btnQuickPrev.setBounds(344, 18, 26, 26);
+    btnQuickSelect.setBounds(372, 16, 256, 30);
+    btnQuickNext.setBounds(630, 18, 26, 26);
+    btnTapTempo.setBounds(890, 16, 48, 30);
 
-    // 2. 4-Channel Live Stage Mixer (x: 338, y: 62)
+    // 2. 4-Channel Live Stage Mixer (x: 16, y: 62)
     for (int ch = 0; ch < 4; ++ch) {
-        const int cx = 352 + ch * 162;
+        const int cx = 28 + ch * 92;
         if (ch == 0) {
-            sliderVolA.setBounds(cx + 12, 154, 42, 204);
-            btnOnA.setBounds(cx + 94, 216, 44, 32);
-            btnMuteA.setBounds(cx + 68, 374, 76, 36);
+            sliderVolA.setBounds(cx + 4, 114, 40, 150);
+            btnOnA.setBounds(cx + 8, 282, 32, 22);
         } else if (ch == 1) {
-            sliderVolB.setBounds(cx + 12, 154, 42, 204);
-            btnOnB.setBounds(cx + 94, 216, 44, 32);
-            btnMuteB.setBounds(cx + 68, 374, 76, 36);
+            sliderVolB.setBounds(cx + 4, 114, 40, 150);
+            btnOnB.setBounds(cx + 8, 282, 32, 22);
         } else if (ch == 2) {
-            sliderVolC.setBounds(cx + 12, 154, 42, 204);
-            btnOnC.setBounds(cx + 94, 216, 44, 32);
-            btnMuteC.setBounds(cx + 68, 374, 76, 36);
+            sliderVolC.setBounds(cx + 4, 114, 40, 150);
+            btnOnC.setBounds(cx + 8, 282, 32, 22);
         } else {
-            sliderVolD.setBounds(cx + 12, 154, 42, 204);
-            btnOnD.setBounds(cx + 94, 216, 44, 32);
-            btnMuteD.setBounds(cx + 68, 374, 76, 36);
+            sliderVolD.setBounds(cx + 4, 114, 40, 150);
+            btnOnD.setBounds(cx + 8, 282, 32, 22);
         }
     }
 
-    // 3. Performance Pads (Song Parts) Row (y: 442, h: 52)
+    // 8 Program Buttons under OLED (x: 430 to 810, y: 268, w: 42, h: 34)
     for (int p = 0; p < 8; ++p) {
-        btnPrograms[size_t(p)].setBounds(16 + p * 125, 442, 117, 52);
+        btnPrograms[size_t(p)].setBounds(432 + p * 46, 268, 42, 34);
     }
 
-    // 4. Visual Split Keybed (x: 28, y: 556, w: 760, h: 184)
-    if (pianoKeyboard != nullptr) {
-        pianoKeyboard->setBounds(28, 556, 760, 184);
-    }
+    // Master Fader (x: 846, y: 114, w: 42, h: 166)
+    sliderMainVolume.setBounds(846, 114, 42, 166);
 
-    // Master Stage Knobs (Right of keyboard)
-    sliderTone.setBounds(818, 536, 52, 48);
-    sliderReverbAmount.setBounds(818, 608, 52, 48);
-    sliderMainVolume.setBounds(818, 680, 52, 48);
+    // 3. Navigation Tabs (y: 354, h: 34)
+    tabPiano.setBounds(16, 354, 192, 34);
+    tabPad.setBounds(216, 354, 192, 34);
+    tabSynth.setBounds(416, 354, 192, 34);
+    tabOrgan.setBounds(616, 354, 192, 34);
+    btnSplitLayer.setBounds(816, 354, 192, 34);
+
+    // 4. Lower Console Deck: Dedicated Sound Sculpting (y: 398)
+    // Category Buttons (3x2 Grid)
+    btnCatGrand.setBounds(30, 436, 68, 30);
+    btnCatUpright.setBounds(104, 436, 68, 30);
+    btnCatEPiano.setBounds(30, 474, 68, 30);
+    btnCatClav.setBounds(104, 474, 68, 30);
+    btnCatSynth.setBounds(30, 512, 68, 30); // Digital
+    btnCatPad.setBounds(104, 512, 68, 30);   // Layered
+
+    // Character Switches click targets (over drawn rockers)
+    swDynamics.setBounds(214, 444, 36, 20);
+    swPedalNoise.setBounds(214, 508, 36, 20);
+    swDamperRes.setBounds(214, 572, 36, 20);
+    swSoftRelease.setBounds(214, 636, 36, 20);
+    swDynamics.setAlpha(0.01f);
+    swPedalNoise.setAlpha(0.01f);
+    swDamperRes.setAlpha(0.01f);
+    swSoftRelease.setAlpha(0.01f);
+
+    // Tone & Filter Knobs (x: 424 to 484)
+    sliderTone.setBounds(424, 436, 52, 48);          // Cutoff
+    sliderResonanceKnob.setBounds(478, 530, 52, 48); // Reso
+    sliderEnv.setBounds(424, 624, 52, 48);           // Env
+
+    // Amp Envelope Knobs (x: 566)
+    sliderAmpAttack.setBounds(566, 436, 52, 48);
+    sliderAmpDecay.setBounds(566, 530, 52, 48);
+    sliderAmpRelease.setBounds(566, 624, 52, 48);
+
+    // Master FX Modules:
+    // EQ (x: 664, y: 432)
+    sliderBass.setBounds(672, 478, 40, 48);
+    sliderMid.setBounds(720, 478, 40, 48);
+    sliderTreble.setBounds(768, 478, 40, 48);
+
+    // DYNAMICS (x: 832, y: 432)
+    sliderCompThresh.setBounds(850, 478, 46, 48);
+    sliderCompRatio.setBounds(920, 478, 46, 48);
+
+    // DELAY (x: 664, y: 590)
+    sliderDelayTime.setBounds(672, 636, 40, 48);
+    sliderDelayFeedback.setBounds(720, 636, 40, 48);
+    sliderTremoloDepth.setBounds(768, 636, 40, 48); // Delay Mix
+
+    // REVERB (x: 832, y: 590)
+    sliderReverbTone.setBounds(842, 636, 40, 48);
+    sliderReverbAmount.setBounds(888, 636, 40, 48);
+    sliderCompressor.setBounds(934, 636, 40, 48); // Reverb Mix knob
 
     if (midiMapOverlay != nullptr) {
         midiMapOverlay->setBounds(getLocalBounds());
