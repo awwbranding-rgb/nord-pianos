@@ -412,6 +412,7 @@ private:
     juce::String bannerMessage;
     int bannerTimer = 0;
 
+        void drawAllenScrew(juce::Graphics& g, float x, float y);
     void drawPanelCard(juce::Graphics& g, juce::Rectangle<int> bounds, const juce::String& title, bool hasLed = true);
     void setupRotary(juce::Slider& s, const juce::String& text, double minV, double maxV, double defV);
     void setupPillButton(juce::TextButton& btn, const juce::String& text, bool isToggle = true);
@@ -431,6 +432,24 @@ private:
     juce::TextButton btnSettings{juce::CharPointer_UTF8("\xe2\x9a\x99")}; // Cog icon
 
     // Top Navigation Tabs (A, B, C, D)
+    // Live Setlist Data & Performance Parts
+    struct SetlistSong {
+        juce::String id;
+        juce::String title;
+        juce::String key;
+        int bpm;
+        juce::String timeSig;
+    };
+    std::vector<SetlistSong> setlistQueue = {
+        { "01", "Great Is The Lord", "D", 72, "4/4" },
+        { "02", "Reckless Love", "F#m", 68, "6/8" },
+        { "03", "The Blessing", "B", 70, "4/4" },
+        { "04", "Way Maker", "E", 66, "4/4" },
+        { "05", "King of Kings", "D", 68, "4/4" }
+    };
+    int currentSongIndex = 0;
+    int activeSongPart = 2; // 0=Intro, 1=Verse, 2=Chorus, etc.
+    int currentTranspose = 0; // Transpose in semitones
     int activeTab = 0; // 0 = Piano, 1 = Worship Pad, 2 = Synth Lead, 3 = Organ B3
     juce::TextButton tabPiano{"A  Piano"};
     juce::TextButton tabPad{"B  Worship Pad"};
