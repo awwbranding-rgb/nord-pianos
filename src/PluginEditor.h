@@ -148,35 +148,53 @@ public:
         juce::ignoreUnused(backgroundColour);
         auto bounds = button.getLocalBounds().toFloat();
         const bool isToggled = button.getToggleState();
-        const float corner = 3.5f;
+        const float corner = 3.0f;
+        const juce::Colour customBg = button.findColour(juce::TextButton::buttonColourId);
+        const bool isRedButton = (customBg == juce::Colour::fromRGB(229, 57, 53) ||
+                                  customBg == juce::Colour::fromRGB(198, 32, 32) ||
+                                  customBg == juce::Colour::fromRGB(210, 35, 40));
 
-        // Button Base
-        if (isToggled) {
-            // Active Nord Crimson Red Illuminated State (#C62020 to #6D0C0C)
-            juce::ColourGradient activeGrad(juce::Colour::fromRGB(198, 32, 32), bounds.getX(), bounds.getY(),
-                                           juce::Colour::fromRGB(105, 12, 16), bounds.getX(), bounds.getBottom(), false);
-            g.setGradientFill(activeGrad);
+        // 1. Drop shadow
+        g.setColour(juce::Colour::fromRGB(0, 0, 0).withAlpha(0.6f));
+        g.fillRoundedRectangle(bounds.translated(0.0f, 1.5f), corner);
+
+        // 2. Button Body
+        if (isToggled || isRedButton) {
+            // Authentic Nord Crimson Red Button (#D32027 to #8A1218)
+            juce::ColourGradient redGrad(
+                isToggled ? juce::Colour::fromRGB(235, 45, 52) : juce::Colour::fromRGB(195, 30, 36),
+                bounds.getX(), bounds.getY(),
+                isToggled ? juce::Colour::fromRGB(140, 16, 22) : juce::Colour::fromRGB(105, 12, 16),
+                bounds.getX(), bounds.getBottom(), false);
+            g.setGradientFill(redGrad);
             g.fillRoundedRectangle(bounds, corner);
 
-            // Glowing Crimson Red Border
-            g.setColour(juce::Colour::fromRGB(255, 75, 75));
-            g.drawRoundedRectangle(bounds, corner, 1.2f);
+            // Highlight & Glowing Red Border
+            g.setColour(juce::Colour::fromRGB(255, 120, 120).withAlpha(0.7f));
+            g.drawHorizontalLine(int(bounds.getY() + 1.0f), bounds.getX() + 2.0f, bounds.getRight() - 2.0f);
+            g.setColour(isToggled ? juce::Colour::fromRGB(255, 90, 90) : juce::Colour::fromRGB(160, 25, 30));
+            g.drawRoundedRectangle(bounds, corner, 1.0f);
         } else {
-            // Matte Charcoal / Dark Slate Base
+            // Tactile Matte Charcoal Stage Button (#2E3440 to #14171E)
             juce::ColourGradient baseGrad(
-                shouldDrawButtonAsHighlighted ? juce::Colour::fromRGB(36, 42, 51) : juce::Colour::fromRGB(24, 28, 35),
+                shouldDrawButtonAsHighlighted ? juce::Colour::fromRGB(45, 52, 64) : juce::Colour::fromRGB(32, 37, 46),
                 bounds.getX(), bounds.getY(),
-                juce::Colour::fromRGB(13, 15, 19), bounds.getX(), bounds.getBottom(), false);
+                juce::Colour::fromRGB(15, 18, 23),
+                bounds.getX(), bounds.getBottom(), false);
             g.setGradientFill(baseGrad);
             g.fillRoundedRectangle(bounds, corner);
 
-            // Subtle border
-            g.setColour(shouldDrawButtonAsHighlighted ? juce::Colour::fromRGB(80, 92, 108) : juce::Colour::fromRGB(42, 48, 58));
+            // Top edge beveled highlight
+            g.setColour(juce::Colour::fromRGB(255, 255, 255).withAlpha(shouldDrawButtonAsHighlighted ? 0.15f : 0.08f));
+            g.drawHorizontalLine(int(bounds.getY() + 1.0f), bounds.getX() + 2.0f, bounds.getRight() - 2.0f);
+
+            // Border
+            g.setColour(shouldDrawButtonAsHighlighted ? juce::Colour::fromRGB(90, 105, 125) : juce::Colour::fromRGB(48, 55, 68));
             g.drawRoundedRectangle(bounds, corner, 1.0f);
         }
 
         if (shouldDrawButtonAsDown) {
-            g.setColour(juce::Colour::fromRGB(0, 0, 0).withAlpha(0.35f));
+            g.setColour(juce::Colour::fromRGB(0, 0, 0).withAlpha(0.45f));
             g.fillRoundedRectangle(bounds, corner);
         }
     }
@@ -429,7 +447,7 @@ private:
     juce::TextButton btnMidiMap{"MIDI MAP"};
     juce::TextButton btnMidiCh{"1 v"};
     juce::TextButton btnOutput{"st. 1 v"};
-    juce::TextButton btnSettings{juce::CharPointer_UTF8("\xe2\x9a\x99")}; // Cog icon
+    juce::TextButton btnSettings{""}; // Cog icon
 
     // Top Navigation Tabs (A, B, C, D)
     // Live Setlist Data & Performance Parts
@@ -533,6 +551,7 @@ private:
     juce::TextButton btnPianoOn{"ON"};
     juce::TextButton btnPianoPrev{"<"};
     juce::TextButton btnPianoNext{">"};
+    juce::TextButton btnPianoSelect{"PIANO SELECT"};
     juce::Slider sliderPianoSelect;
     juce::Slider sliderPianoVol;
     juce::Slider sliderPianoRelease;
@@ -558,6 +577,8 @@ private:
     std::array<juce::TextButton, 8> btnPrograms;
     juce::TextButton btnStore{"STORE"};
     juce::TextButton btnSave{"SAVE"};
+    juce::TextButton btnLoadNord{"LOAD"};
+    juce::TextButton btnSaveNord{"SAVE"};
     juce::TextButton btnRescanLibrary{"RESCAN SOUNDS"};
 
     // Dedicated Worship Pad Layer (Layer B)
@@ -593,6 +614,9 @@ private:
     juce::TextButton btnTuneDown{"<"};
     juce::TextButton btnTuneUp{">"};
     juce::Slider sliderTune;
+    juce::Slider sliderPartMix;
+    juce::TextButton btnOctaveDown{"<"};
+    juce::TextButton btnOctaveUp{">"};
     juce::Slider sliderMainVolume;
 
     // Bottom Keyboard & Status
