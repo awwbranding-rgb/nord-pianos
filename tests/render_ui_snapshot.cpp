@@ -17,7 +17,7 @@ int runSnapshot() {
         return 1;
     }
 
-    editor->setSize(1024, 736);
+    editor->setSize(1024, 768);
     editor->setVisible(true);
     std::cout << "Editor sized: " << editor->getBounds().toString().toStdString() << std::endl;
 

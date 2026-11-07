@@ -5,12 +5,14 @@
 //==============================================================================
 // Black Edition Custom LookAndFeel (Zero Red, Ice-Blue #65BFFF Accents)
 //==============================================================================
+// Black Edition Custom LookAndFeel (OmniStage Flagship Console)
+//==============================================================================
 class BlackKnobLookAndFeel : public juce::LookAndFeel_V4 {
 public:
     BlackKnobLookAndFeel() {
-        setColour(juce::Slider::rotarySliderFillColourId, juce::Colour::fromRGB(101, 191, 255)); // #65BFFF
+        setColour(juce::Slider::rotarySliderFillColourId, juce::Colour::fromRGB(229, 57, 53)); // #E53935
         setColour(juce::Slider::rotarySliderOutlineColourId, juce::Colour::fromRGB(25, 29, 36));
-        setColour(juce::Slider::thumbColourId, juce::Colour::fromRGB(101, 191, 255));
+        setColour(juce::Slider::thumbColourId, juce::Colour::fromRGB(229, 57, 53));
     }
 
     void drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height,
@@ -82,114 +84,100 @@ public:
                           const juce::Slider::SliderStyle style, juce::Slider& slider) override {
         if (slider.isVertical()) {
             const float cx = x + width * 0.5f;
-            const float trackW = 7.0f;
+            const float trackW = 6.0f;
             const float trackX = cx - trackW * 0.5f;
             const float topY = (float)y + 6.0f;
             const float botY = (float)(y + height) - 6.0f;
             const float trackH = botY - topY;
 
             // 1. Recessed Fader Well Plate (#12151C to #0A0C10)
-            juce::Rectangle<float> well(cx - 24.0f, topY - 3.0f, 48.0f, trackH + 6.0f);
+            juce::Rectangle<float> well(cx - 20.0f, topY - 2.0f, 40.0f, trackH + 4.0f);
             g.setColour(juce::Colour::fromRGB(2, 3, 5).withAlpha(0.85f));
-            g.fillRoundedRectangle(well.translated(0.0f, 2.0f), 4.0f); // cast shadow
+            g.fillRoundedRectangle(well.translated(0.0f, 2.0f), 3.0f); // cast shadow
 
             juce::ColourGradient wellGrad(juce::Colour::fromRGB(19, 23, 29), cx, topY,
                                           juce::Colour::fromRGB(10, 12, 16), cx, botY, false);
             g.setGradientFill(wellGrad);
-            g.fillRoundedRectangle(well, 3.5f);
+            g.fillRoundedRectangle(well, 3.0f);
 
             // Inner Shadow & Bevel Edge
             g.setColour(juce::Colour::fromRGB(0, 0, 0).withAlpha(0.7f));
-            g.drawRoundedRectangle(well, 3.5f, 1.0f);
+            g.drawRoundedRectangle(well, 3.0f, 1.0f);
             g.setColour(juce::Colour::fromRGB(45, 52, 65).withAlpha(0.5f));
-            g.drawRoundedRectangle(well.reduced(0.8f), 3.0f, 0.8f);
+            g.drawRoundedRectangle(well.reduced(0.8f), 2.5f, 0.8f);
 
             // 2. Calibrated dB Scale Ticks alongside the slot
-            struct Tick { float posNorm; const char* label; bool isZero; };
+            struct Tick { float posNorm; bool isZero; };
             const Tick ticks[] = {
-                { 0.05f, "+6", false },
-                { 0.22f, "0", true },
-                { 0.40f, "-6", false },
-                { 0.58f, "-12", false },
-                { 0.78f, "-24", false },
-                { 0.95f, "oo", false }
+                { 0.08f, false },
+                { 0.25f, true },  // 0 dB
+                { 0.45f, false },
+                { 0.65f, false },
+                { 0.85f, false }
             };
 
             for (const auto& tk : ticks) {
                 float ty = topY + tk.posNorm * trackH;
-                g.setColour(tk.isZero ? juce::Colour::fromRGB(229, 57, 53) : juce::Colour::fromRGB(110, 120, 135));
-                g.drawLine(cx - 21.0f, ty, cx - 14.0f, ty, tk.isZero ? 1.8f : 1.0f);
-                g.drawLine(cx + 14.0f, ty, cx + 21.0f, ty, tk.isZero ? 1.8f : 1.0f);
-                if (tk.isZero) {
-                    g.setColour(juce::Colour::fromRGB(229, 57, 53).withAlpha(0.35f));
-                    g.drawLine(cx - 14.0f, ty, cx + 14.0f, ty, 1.0f);
-                }
+                g.setColour(tk.isZero ? juce::Colour::fromRGB(229, 57, 53) : juce::Colour::fromRGB(130, 140, 155));
+                g.drawLine(cx - 18.0f, ty, cx - 11.0f, ty, tk.isZero ? 1.6f : 1.0f);
+                g.drawLine(cx + 11.0f, ty, cx + 18.0f, ty, tk.isZero ? 1.6f : 1.0f);
             }
 
             // 3. Central Slot Slit with Dark Inner Shadow
-            g.setColour(juce::Colour::fromRGB(5, 6, 9));
-            g.fillRoundedRectangle(trackX, topY, trackW, trackH, 2.5f);
-            g.setColour(juce::Colour::fromRGB(24, 28, 36));
-            g.drawRoundedRectangle(trackX, topY, trackW, trackH, 2.5f, 1.0f);
+            g.setColour(juce::Colour::fromRGB(4, 5, 8));
+            g.fillRoundedRectangle(trackX, topY, trackW, trackH, 2.0f);
+            g.setColour(juce::Colour::fromRGB(22, 26, 34));
+            g.drawRoundedRectangle(trackX, topY, trackW, trackH, 2.0f, 1.0f);
 
             // 4. Illuminated Neon Channel along fader position
             juce::Colour neonColor = juce::Colour::fromRGB(229, 57, 53); // Nord Crimson Red
             if (sliderPos < botY) {
                 float activeH = botY - sliderPos;
-                g.setColour(neonColor.withAlpha(0.25f));
+                g.setColour(neonColor.withAlpha(0.28f));
                 g.fillRect(trackX + 1.0f, sliderPos, trackW - 2.0f, activeH);
                 g.setColour(neonColor);
-                g.fillRect(trackX + 2.5f, sliderPos, trackW - 5.0f, activeH);
+                g.fillRect(trackX + 2.0f, sliderPos, trackW - 4.0f, activeH);
             }
 
-            // 5. Heavyweight Chunky 3D Aluminum Stage Fader Cap (Roland RD-2000 / Neve style)
-            const float capW = 42.0f;
-            const float capH = 46.0f;
+            // 5. Chunky 3D Aluminum Stage Fader Cap (Roland RD-2000 / Neve style)
+            const float capW = 36.0f;
+            const float capH = 34.0f;
             const float capX = cx - capW * 0.5f;
-            const float capY = juce::jlimit(topY - 2.0f, botY - capH + 2.0f, sliderPos - capH * 0.5f);
+            const float capY = juce::jlimit(topY - 1.0f, botY - capH + 1.0f, sliderPos - capH * 0.5f);
 
             // A. Deep 3D Cast Drop Shadow underneath cap
             g.setColour(juce::Colour::fromRGB(0, 0, 0).withAlpha(0.85f));
-            g.fillRoundedRectangle(capX + 1.0f, capY + 4.0f, capW, capH, 4.0f);
-            g.setColour(juce::Colour::fromRGB(0, 0, 0).withAlpha(0.40f));
-            g.fillRoundedRectangle(capX + 2.0f, capY + 6.5f, capW, capH, 5.0f);
+            g.fillRoundedRectangle(capX + 1.0f, capY + 3.0f, capW, capH, 3.0f);
 
             // B. Cap Base Metallic Body (Multi-stage brushed silver-graphite gradient)
-            juce::ColourGradient capGrad(juce::Colour::fromRGB(215, 222, 234), capX, capY,
-                                         juce::Colour::fromRGB(45, 52, 65), capX, capY + capH, false);
-            capGrad.addColour(0.25, juce::Colour::fromRGB(150, 160, 175));
-            capGrad.addColour(0.50, juce::Colour::fromRGB(95, 105, 120));
-            capGrad.addColour(0.75, juce::Colour::fromRGB(65, 74, 88));
+            juce::ColourGradient capGrad(juce::Colour::fromRGB(220, 228, 238), capX, capY,
+                                         juce::Colour::fromRGB(80, 88, 102), capX, capY + capH, false);
+            capGrad.addColour(0.20, juce::Colour::fromRGB(175, 184, 196));
+            capGrad.addColour(0.50, juce::Colour::fromRGB(120, 130, 144));
+            capGrad.addColour(0.80, juce::Colour::fromRGB(90, 98, 112));
             g.setGradientFill(capGrad);
-            g.fillRoundedRectangle(capX, capY, capW, capH, 3.5f);
+            g.fillRoundedRectangle(capX, capY, capW, capH, 3.0f);
 
             // C. Top Specular CNC-Machined Edge Highlight
-            g.setColour(juce::Colour::fromRGB(255, 255, 255).withAlpha(0.85f));
-            g.drawHorizontalLine(int(capY + 1.0f), capX + 3.0f, capX + capW - 3.0f);
-            g.setColour(juce::Colour::fromRGB(15, 18, 24));
+            g.setColour(juce::Colour::fromRGB(255, 255, 255).withAlpha(0.90f));
+            g.drawHorizontalLine(int(capY + 1.0f), capX + 2.0f, capX + capW - 2.0f);
+            g.setColour(juce::Colour::fromRGB(20, 24, 32));
             g.drawHorizontalLine(int(capY + capH - 1.0f), capX + 2.0f, capX + capW - 2.0f);
-            g.setColour(juce::Colour::fromRGB(35, 42, 54));
-            g.drawRoundedRectangle(capX, capY, capW, capH, 3.5f, 1.2f);
+            g.setColour(juce::Colour::fromRGB(40, 48, 60));
+            g.drawRoundedRectangle(capX, capY, capW, capH, 3.0f, 1.0f);
 
-            // D. Tactile Grip Ridges (3 horizontal deep rubberized finger grooves)
-            for (int r = 0; r < 3; ++r) {
-                float ry = capY + 11.0f + float(r) * 11.0f;
-                // Shadow groove
-                g.setColour(juce::Colour::fromRGB(18, 22, 28));
-                g.fillRect(capX + 6.0f, ry, capW - 12.0f, 2.2f);
-                // Lower highlight line
-                g.setColour(juce::Colour::fromRGB(255, 255, 255).withAlpha(0.35f));
-                g.fillRect(capX + 6.0f, ry + 2.2f, capW - 12.0f, 1.0f);
-            }
+            // D. Tactile Grip Ridges (Horizontal finger groove)
+            const float midCapY = capY + capH * 0.5f;
+            g.setColour(juce::Colour::fromRGB(20, 24, 30));
+            g.fillRect(capX + 4.0f, midCapY - 1.5f, capW - 8.0f, 3.0f);
 
             // E. Center Illuminated Marker Line (High-visibility neon Nord Red)
-            const float midCapY = capY + capH * 0.5f;
-            g.setColour(neonColor.withAlpha(0.45f));
-            g.fillRect(capX + 3.0f, midCapY - 2.0f, capW - 6.0f, 4.0f); // outer bloom
-            g.setColour(juce::Colour::fromRGB(255, 60, 70));
-            g.fillRect(capX + 4.0f, midCapY - 1.0f, capW - 8.0f, 2.0f); // core neon
+            g.setColour(neonColor.withAlpha(0.5f));
+            g.fillRect(capX + 3.0f, midCapY - 1.5f, capW - 6.0f, 3.0f);
+            g.setColour(juce::Colour::fromRGB(255, 70, 75));
+            g.fillRect(capX + 4.0f, midCapY - 1.0f, capW - 8.0f, 2.0f);
             g.setColour(juce::Colour::fromRGB(255, 255, 255));
-            g.fillRect(capX + 12.0f, midCapY - 0.5f, capW - 24.0f, 1.0f); // center specular glint
+            g.fillRect(capX + 10.0f, midCapY - 0.5f, capW - 20.0f, 1.0f);
         } else {
             juce::LookAndFeel_V4::drawLinearSlider(g, x, y, width, height, sliderPos, minSliderPos, maxSliderPos, style, slider);
         }
@@ -202,19 +190,78 @@ public:
         juce::ignoreUnused(backgroundColour);
         auto bounds = button.getLocalBounds().toFloat();
         const bool isToggled = button.getToggleState();
-        const float corner = 3.0f;
+        const float corner = 3.5f;
+
+        // Special Case: Slide Toggle Switch (for Dynamics, Pedal Noise, Damper Res)
+        if (button.getButtonText().isEmpty() && button.getWidth() <= 42) {
+            const float trackH = 18.0f;
+            const float trackW = bounds.getWidth() - 2.0f;
+            const float trackX = bounds.getX() + 1.0f;
+            const float trackY = bounds.getCentreY() - trackH * 0.5f;
+            juce::Rectangle<float> trackRect(trackX, trackY, trackW, trackH);
+
+            if (isToggled) {
+                juce::ColourGradient tGrad(juce::Colour::fromRGB(235, 45, 52), trackX, trackY,
+                                           juce::Colour::fromRGB(160, 20, 26), trackX, trackY + trackH, false);
+                g.setGradientFill(tGrad);
+            } else {
+                g.setColour(juce::Colour::fromRGB(32, 38, 48));
+            }
+            g.fillRoundedRectangle(trackRect, trackH * 0.5f);
+            g.setColour(isToggled ? juce::Colour::fromRGB(255, 90, 95) : juce::Colour::fromRGB(50, 58, 70));
+            g.drawRoundedRectangle(trackRect, trackH * 0.5f, 1.0f);
+
+            const float knobD = 14.0f;
+            const float knobY = trackY + 2.0f;
+            const float knobX = isToggled ? (trackRect.getRight() - knobD - 2.0f) : (trackRect.getX() + 2.0f);
+
+            g.setColour(juce::Colour::fromRGB(0, 0, 0).withAlpha(0.6f));
+            g.fillEllipse(knobX, knobY + 1.0f, knobD, knobD);
+
+            juce::ColourGradient kGrad(juce::Colour::fromRGB(255, 255, 255), knobX, knobY,
+                                       juce::Colour::fromRGB(210, 215, 222), knobX, knobY + knobD, false);
+            g.setGradientFill(kGrad);
+            g.fillEllipse(knobX, knobY, knobD, knobD);
+            g.setColour(juce::Colour::fromRGB(180, 185, 195));
+            g.drawEllipse(knobX, knobY, knobD, knobD, 0.8f);
+            return;
+        }
+
+        // Special Case: Mixer ON button
+        if (button.getButtonText() == "ON") {
+            g.setColour(juce::Colour::fromRGB(0, 0, 0).withAlpha(0.6f));
+            g.fillRoundedRectangle(bounds.translated(0.0f, 1.5f), corner);
+
+            if (isToggled) {
+                juce::ColourGradient onGrad(juce::Colour::fromRGB(45, 20, 24), bounds.getX(), bounds.getY(),
+                                            juce::Colour::fromRGB(22, 10, 12), bounds.getX(), bounds.getBottom(), false);
+                g.setGradientFill(onGrad);
+                g.fillRoundedRectangle(bounds, corner);
+
+                g.setColour(juce::Colour::fromRGB(255, 50, 60).withAlpha(0.45f));
+                g.drawRoundedRectangle(bounds.expanded(1.0f), corner + 1.0f, 1.5f);
+                g.setColour(juce::Colour::fromRGB(240, 45, 52));
+                g.drawRoundedRectangle(bounds, corner, 1.2f);
+            } else {
+                g.setColour(juce::Colour::fromRGB(20, 24, 30));
+                g.fillRoundedRectangle(bounds, corner);
+                g.setColour(juce::Colour::fromRGB(45, 52, 65));
+                g.drawRoundedRectangle(bounds, corner, 1.0f);
+            }
+            return;
+        }
+
+        // 1. Drop shadow
+        g.setColour(juce::Colour::fromRGB(0, 0, 0).withAlpha(0.65f));
+        g.fillRoundedRectangle(bounds.translated(0.0f, 1.5f), corner);
+
         const juce::Colour customBg = button.findColour(juce::TextButton::buttonColourId);
         const bool isRedButton = (customBg == juce::Colour::fromRGB(229, 57, 53) ||
                                   customBg == juce::Colour::fromRGB(198, 32, 32) ||
                                   customBg == juce::Colour::fromRGB(210, 35, 40));
 
-        // 1. Drop shadow
-        g.setColour(juce::Colour::fromRGB(0, 0, 0).withAlpha(0.6f));
-        g.fillRoundedRectangle(bounds.translated(0.0f, 1.5f), corner);
-
         // 2. Button Body
         if (isToggled || isRedButton) {
-            // Authentic Nord Crimson Red Button (#D32027 to #8A1218)
             juce::ColourGradient redGrad(
                 isToggled ? juce::Colour::fromRGB(235, 45, 52) : juce::Colour::fromRGB(195, 30, 36),
                 bounds.getX(), bounds.getY(),
@@ -229,7 +276,6 @@ public:
             g.setColour(isToggled ? juce::Colour::fromRGB(255, 90, 90) : juce::Colour::fromRGB(160, 25, 30));
             g.drawRoundedRectangle(bounds, corner, 1.0f);
         } else {
-            // Tactile Matte Charcoal Stage Button (#2E3440 to #14171E)
             juce::ColourGradient baseGrad(
                 shouldDrawButtonAsHighlighted ? juce::Colour::fromRGB(45, 52, 64) : juce::Colour::fromRGB(32, 37, 46),
                 bounds.getX(), bounds.getY(),
